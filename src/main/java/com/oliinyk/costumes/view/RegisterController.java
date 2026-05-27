@@ -27,7 +27,7 @@ public class RegisterController {
         com.oliinyk.costumes.service.AuthService authService =
                 new com.oliinyk.costumes.service.AuthService(
                         new com.oliinyk.costumes.repository.JdbcUserRepository(),
-                        new com.oliinyk.costumes.service.ConsoleEmailServiceImpl());
+                        new com.oliinyk.costumes.service.SmtpEmailServiceImpl());
 
         viewModel = new com.oliinyk.costumes.viewmodel.RegisterViewModel(authService);
 

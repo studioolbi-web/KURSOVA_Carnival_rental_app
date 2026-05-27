@@ -48,7 +48,7 @@
             
             <Region VBox.vgrow="ALWAYS" />
             
-            <Button text="Вийти" maxWidth="Infinity" alignment="BASELINE_LEFT" onAction="#logout" styleClass="danger">
+            <Button fx:id="btnLogout" text="Вийти" maxWidth="Infinity" alignment="BASELINE_LEFT" onAction="#logout" styleClass="danger">
                 <graphic>
                     <FontIcon iconLiteral="fas-sign-out-alt" iconSize="16" />
                 </graphic>

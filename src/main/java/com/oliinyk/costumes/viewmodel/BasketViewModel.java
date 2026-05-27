@@ -42,12 +42,24 @@ public class BasketViewModel {
 
     /** Оновлює список елементів у кошику та перераховує вартість. */
     public void refresh() {
-        items.setAll(basketService.getItems());
-        recalculate();
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            items.setAll(basketService.getItems());
+            recalculate();
+        } else {
+            javafx.application.Platform.runLater(() -> {
+                items.setAll(basketService.getItems());
+                recalculate();
+            });
+        }
     }
 
     /** Перераховує загальну вартість оренди, заставу та знижку на основі вибраних дат. */
     public void recalculate() {
+        if (!javafx.application.Platform.isFxApplicationThread()) {
+            javafx.application.Platform.runLater(this::recalculate);
+            return;
+        }
+        
         if (startDate.get() != null && endDate.get() != null) {
             long days = ChronoUnit.DAYS.between(startDate.get(), endDate.get());
             if (days <= 0) days = 1;

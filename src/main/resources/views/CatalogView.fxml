@@ -29,6 +29,8 @@
                 </Button>
             </HBox>
             
+            <ComboBox fx:id="categoryFilter" promptText="Всі категорії" prefWidth="180" />
+            
             <TextField fx:id="searchField" promptText="Пошук за назвою..." prefWidth="250" />
         </HBox>
     </VBox>

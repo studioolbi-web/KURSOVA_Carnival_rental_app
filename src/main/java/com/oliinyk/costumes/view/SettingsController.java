@@ -14,6 +14,7 @@ public class SettingsController {
     @FXML private ToggleButton themeToggle;
     @FXML private ToggleButton gridToggle;
     @FXML private ToggleButton listToggle;
+    @FXML private javafx.scene.control.ComboBox<String> languageCombo;
 
     private SettingsViewModel viewModel;
 
@@ -50,6 +51,22 @@ public class SettingsController {
         } else {
             listToggle.setSelected(true);
         }
+
+        // Налаштування мови
+        languageCombo.getItems().addAll("Українська", "English");
+        if (com.oliinyk.costumes.util.I18nManager.getLocale().getLanguage().equals("en")) {
+            languageCombo.setValue("English");
+        } else {
+            languageCombo.setValue("Українська");
+        }
+        
+        languageCombo.setOnAction(e -> {
+            if ("English".equals(languageCombo.getValue())) {
+                com.oliinyk.costumes.util.I18nManager.setLocale(java.util.Locale.of("en", "US"));
+            } else {
+                com.oliinyk.costumes.util.I18nManager.setLocale(java.util.Locale.of("uk", "UA"));
+            }
+        });
     }
 
     private void updateThemeText() {

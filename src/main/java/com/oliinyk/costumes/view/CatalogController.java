@@ -28,9 +28,11 @@ public class CatalogController {
     @FXML private DatePicker endDatePicker;
     @FXML private Button gridModeBtn;
     @FXML private Button listModeBtn;
+    @FXML private ComboBox<com.oliinyk.costumes.model.Category> categoryFilter;
 
     private CatalogViewModel viewModel;
     private final JdbcRentalRepository rentalRepo = new JdbcRentalRepository();
+    private final com.oliinyk.costumes.repository.JdbcCategoryRepository categoryRepo = new com.oliinyk.costumes.repository.JdbcCategoryRepository();
 
     /** Встановлює ViewModel та ініціалізує дані. */
     public void setViewModel(CatalogViewModel viewModel) {
@@ -102,7 +104,22 @@ public class CatalogController {
     }
 
     private void setupSearch() {
-        // Реалізація динамічного пошуку (Вимога 5.2)
+        // Завантаження категорій
+        categoryFilter.getItems().add(null); // Опція "Всі категорії"
+        categoryFilter.getItems().addAll(categoryRepo.findAll());
+        categoryFilter.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(com.oliinyk.costumes.model.Category category) {
+                return category == null ? "Всі категорії" : category.getName();
+            }
+            @Override
+            public com.oliinyk.costumes.model.Category fromString(String string) {
+                return null;
+            }
+        });
+        
+        categoryFilter.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> populateGrid(viewModel.getCostumes()));
+
         searchField
                 .textProperty()
                 .addListener(
@@ -123,15 +140,15 @@ public class CatalogController {
 
         // Фільтрація за пошуком
         String filter = searchField.getText();
+        com.oliinyk.costumes.model.Category selectedCat = categoryFilter.getSelectionModel().getSelectedItem();
+
         List<Costume> filtered =
                 costumes.stream()
-                        .filter(
-                                c ->
-                                        filter == null
-                                                || filter.isEmpty()
-                                                || c.getName()
-                                                        .toLowerCase()
-                                                        .contains(filter.toLowerCase()))
+                        .filter(c -> {
+                            boolean matchesName = filter == null || filter.isEmpty() || c.getName().toLowerCase().contains(filter.toLowerCase());
+                            boolean matchesCat = selectedCat == null || c.getCategoryId().equals(selectedCat.getId());
+                            return matchesName && matchesCat;
+                        })
                         .collect(Collectors.toList());
 
         for (Costume costume : filtered) {
@@ -209,6 +226,8 @@ public class CatalogController {
                     addToCartBtn.getStyleClass().remove("accent");
                     addToCartBtn.getStyleClass().add("success");
                     addToCartBtn.setDisable(true);
+                    
+                    showToast("Костюм «" + costume.getName() + "» додано у кошик!");
                 });
 
         if ("LIST".equals(viewMode)) {
@@ -223,6 +242,45 @@ public class CatalogController {
             card.getChildren().addAll(imageView, nameLabel, priceLabel, addToCartBtn);
         }
 
+        // Клік для перегляду деталей
+        card.setOnMouseClicked(event -> {
+            showCostumeDetails(costume);
+        });
+
         return card;
+    }
+
+    private void showToast(String message) {
+        javafx.scene.control.Label toast = new javafx.scene.control.Label(message);
+        toast.setStyle("-fx-background-color: -color-success-emphasis; -fx-text-fill: -color-fg-on-emphasis; -fx-padding: 10 20; -fx-background-radius: 20; -fx-font-size: 14;");
+        
+        javafx.scene.layout.StackPane root = (javafx.scene.layout.StackPane) costumesGrid.getScene().getRoot();
+        root.getChildren().add(toast);
+        javafx.scene.layout.StackPane.setAlignment(toast, javafx.geometry.Pos.BOTTOM_CENTER);
+        javafx.scene.layout.StackPane.setMargin(toast, new Insets(0, 0, 50, 0));
+
+        javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
+        delay.setOnFinished(e -> root.getChildren().remove(toast));
+        delay.play();
+    }
+    private void showCostumeDetails(Costume costume) {
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/views/CostumeDetailView.fxml"));
+            javafx.scene.layout.VBox page = loader.load();
+
+            javafx.stage.Stage dialogStage = new javafx.stage.Stage();
+            dialogStage.setTitle(costume.getName());
+            dialogStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            dialogStage.initOwner(costumesGrid.getScene().getWindow());
+            javafx.scene.Scene scene = new javafx.scene.Scene(page, 500, 650);
+            dialogStage.setScene(scene);
+
+            CostumeDetailController controller = loader.getController();
+            controller.setCostume(costume);
+
+            dialogStage.showAndWait();
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -13,6 +13,19 @@ module com.oliinyk.costumes.carnivalrentalapp {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.fontawesome5;
 
+    requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.core;
+    requires com.fasterxml.jackson.datatype.jsr310;
+    
+    requires jakarta.mail;
+    
+    requires com.google.zxing;
+    requires com.google.zxing.javase;
+    
+    requires kernel;
+    requires layout;
+    requires io;
+
     exports com.oliinyk.costumes.model;
     exports com.oliinyk.costumes.repository;
     exports com.oliinyk.costumes.service;

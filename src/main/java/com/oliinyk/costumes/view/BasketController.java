@@ -28,7 +28,7 @@ import javafx.stage.Stage;
 /** Контролер кошика. Реалізує асинхронну логіку оформлення замовлення (Вимога розділу 4.4.5). */
 public class BasketController {
 
-    @FXML private ListView<String> basketItems;
+    @FXML private ListView<Costume> basketItems;
     @FXML private DatePicker startDatePicker;
     @FXML private DatePicker endDatePicker;
     @FXML private Label totalPriceLabel;
@@ -39,6 +39,54 @@ public class BasketController {
 
     public void setViewModel(BasketViewModel viewModel) {
         this.viewModel = viewModel;
+        
+        basketItems.setCellFactory(param -> new javafx.scene.control.ListCell<Costume>() {
+            private final javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView();
+            @Override
+            protected void updateItem(Costume item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    if (item.getImagePath() != null && !item.getImagePath().isEmpty()) {
+                        try {
+                            String path = item.getImagePath();
+                            java.net.URL resourceUrl = getClass().getResource(path);
+                            if (resourceUrl != null) {
+                                imageView.setImage(new javafx.scene.image.Image(resourceUrl.toExternalForm(), true));
+                            } else {
+                                java.io.File file = new java.io.File(path);
+                                if (file.exists()) {
+                                    imageView.setImage(new javafx.scene.image.Image(file.toURI().toString(), true));
+                                }
+                            }
+                            imageView.setFitWidth(50);
+                            imageView.setFitHeight(50);
+                            imageView.setPreserveRatio(true);
+                        } catch (Exception ex) {}
+                    } else {
+                        imageView.setImage(null);
+                    }
+                    
+                    VBox vBox = new VBox(5);
+                    Label nameLabel = new Label(item.getName());
+                    nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: -color-fg-default;");
+                    Label priceLabel = new Label(String.format("%.2f грн/день", item.getPricePerDay()));
+                    priceLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: -color-accent-emphasis;");
+                    
+                    vBox.getChildren().addAll(nameLabel, priceLabel);
+                    
+                    HBox hBox = new HBox(15);
+                    hBox.setAlignment(Pos.CENTER_LEFT);
+                    hBox.getChildren().addAll(imageView, vBox);
+                    
+                    setText(null);
+                    setGraphic(hBox);
+                }
+            }
+        });
+
         setupBindings();
         refreshList();
     }
@@ -91,16 +139,26 @@ public class BasketController {
     }
 
     private void refreshList() {
-        basketItems.getItems().clear();
-        for (Costume c : viewModel.getItems()) {
-            basketItems
-                    .getItems()
-                    .add(String.format("%s - %.2f грн/день", c.getName(), c.getPricePerDay()));
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            basketItems.getItems().setAll(viewModel.getItems());
+        } else {
+            javafx.application.Platform.runLater(() -> basketItems.getItems().setAll(viewModel.getItems()));
         }
     }
 
     @FXML
     private void onRentClicked() {
+        // Знімок даних кошика до очищення (Блок 1: Електронний чек)
+        List<Costume> snapshot = viewModel.getItemsSnapshot();
+        long days = ChronoUnit.DAYS.between(startDatePicker.getValue(), endDatePicker.getValue());
+        if (days <= 0) days = 1;
+        BigDecimal rentalTotal = viewModel.getRentalTotal(days);
+        BigDecimal deposit = viewModel.getTotalDeposit();
+        BigDecimal discount = viewModel.getDiscount(days);
+        BigDecimal grandTotal = rentalTotal.add(deposit).subtract(discount);
+        LocalDate start = startDatePicker.getValue();
+        LocalDate end = endDatePicker.getValue();
+
         // Асинхронне оформлення замовлення (Вимога розділу 4.4.5)
         Task<Void> checkoutTask =
                 new Task<>() {
@@ -112,24 +170,13 @@ public class BasketController {
                 };
         checkoutTask.setOnSucceeded(
                 e -> {
-                    // Знімок даних кошика до очищення (Блок 1: Електронний чек)
-                    List<Costume> snapshot = viewModel.getItemsSnapshot();
-                    long days =
-                            ChronoUnit.DAYS.between(
-                                    startDatePicker.getValue(), endDatePicker.getValue());
-                    if (days <= 0) days = 1;
-                    BigDecimal rentalTotal = viewModel.getRentalTotal(days);
-                    BigDecimal deposit = viewModel.getTotalDeposit();
-                    BigDecimal discount = viewModel.getDiscount(days);
-                    BigDecimal grandTotal = rentalTotal.add(deposit);
-
                     refreshList();
 
                     // Показати електронний чек
                     showReceiptDialog(
                             snapshot,
-                            startDatePicker.getValue(),
-                            endDatePicker.getValue(),
+                            start,
+                            end,
                             rentalTotal,
                             deposit,
                             discount,
@@ -176,8 +223,8 @@ public class BasketController {
             BigDecimal grandTotal) {
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        long days = ChronoUnit.DAYS.between(start, end);
-        if (days <= 0) days = 1;
+        long calculatedDays = ChronoUnit.DAYS.between(start, end);
+        final long days = calculatedDays <= 0 ? 1 : calculatedDays;
 
         // ── Заголовок чеку ──
         Label titleIcon = new Label("\uD83E\uDDFE");
@@ -250,8 +297,38 @@ public class BasketController {
 
         // ── Кнопка закриття ──
         Button closeBtn = new Button("Закрити");
-        closeBtn.getStyleClass().addAll("button", "accent");
+        closeBtn.getStyleClass().addAll("button");
         closeBtn.setPrefWidth(160);
+
+        // ── Кнопка Зберегти PDF ──
+        Button savePdfBtn = new Button("Зберегти PDF");
+        savePdfBtn.getStyleClass().addAll("button", "accent");
+        savePdfBtn.setPrefWidth(160);
+
+        savePdfBtn.setOnAction(ev -> {
+            javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+            fileChooser.setTitle("Зберегти чек у PDF");
+            fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("PDF Document", "*.pdf"));
+            fileChooser.setInitialFileName("receipt_" + System.currentTimeMillis() + ".pdf");
+            java.io.File file = fileChooser.showSaveDialog(basketItems.getScene().getWindow());
+
+            if (file != null) {
+                com.oliinyk.costumes.service.export.ReceiptData data = new com.oliinyk.costumes.service.export.ReceiptData(
+                        items, start, end, days, rentalTotal, deposit, discount, grandTotal
+                );
+                com.oliinyk.costumes.service.export.ExportStrategy<com.oliinyk.costumes.service.export.ReceiptData> strategy = new com.oliinyk.costumes.service.export.ReceiptPdfExportStrategy();
+                try {
+                    strategy.export(data, file);
+                    showAlert("Успіх", "Чек успішно збережено в PDF!", Alert.AlertType.INFORMATION);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    showAlert("Помилка", "Не вдалося зберегти PDF: " + ex.getMessage(), Alert.AlertType.ERROR);
+                }
+            }
+        });
+
+        HBox buttonsBox = new HBox(10, closeBtn, savePdfBtn);
+        buttonsBox.setAlignment(Pos.CENTER);
 
         // ── Складання макету ──
         VBox root =
@@ -265,7 +342,7 @@ public class BasketController {
                         itemsBox,
                         new Separator(),
                         summaryBox,
-                        closeBtn);
+                        buttonsBox);
         root.setPadding(new Insets(24));
         root.setAlignment(Pos.TOP_CENTER);
         root.setStyle("-fx-background-color: -color-bg-default;");

@@ -36,6 +36,16 @@
                             <FontIcon iconLiteral="fas-plus" iconColor="white" />
                         </graphic>
                     </Button>
+                    <Button text="Backup (JSON)" styleClass="button" onAction="#onBackupCostumesClicked">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-download" />
+                        </graphic>
+                    </Button>
+                    <Button text="Restore (JSON)" styleClass="button" onAction="#onRestoreCostumesClicked">
+                        <graphic>
+                            <FontIcon iconLiteral="fas-upload" />
+                        </graphic>
+                    </Button>
                     <Region HBox.hgrow="ALWAYS" />
                     <TextField fx:id="costumeSearchField" promptText="Пошук костюмів..." />
                 </HBox>

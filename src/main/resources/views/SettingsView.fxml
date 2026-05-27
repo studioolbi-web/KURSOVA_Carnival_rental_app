@@ -23,5 +23,10 @@
             <ToggleButton fx:id="gridToggle" text="Сітка (Grid)" onAction="#onGridViewSelected" />
             <ToggleButton fx:id="listToggle" text="Список (List)" onAction="#onListViewSelected" />
         </HBox>
+        <Separator />
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <Label text="Мова / Language:" style="-fx-font-size: 14;" />
+            <ComboBox fx:id="languageCombo" prefWidth="150" />
+        </HBox>
     </VBox>
 </VBox>

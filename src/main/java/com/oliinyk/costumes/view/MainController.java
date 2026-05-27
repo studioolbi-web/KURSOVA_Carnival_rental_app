@@ -1,6 +1,5 @@
 package com.oliinyk.costumes.view;
 
-import com.oliinyk.costumes.repository.JdbcCostumeRepository;
 import com.oliinyk.costumes.repository.JdbcRentalItemRepository;
 import com.oliinyk.costumes.repository.JdbcRentalRepository;
 import com.oliinyk.costumes.repository.JdbcUserRepository;
@@ -22,8 +21,12 @@ public class MainController {
     @FXML private StackPane contentArea;
 
     // Створюємо загальний ViewModel для каталогу, щоб не втрачати стан при перемиканні
-    @FXML private javafx.scene.control.Button btnAdmin;
+    @FXML private javafx.scene.control.Button btnCatalog;
+    @FXML private javafx.scene.control.Button btnBasket;
     @FXML private javafx.scene.control.Button btnMyRentals;
+    @FXML private javafx.scene.control.Button btnAdmin;
+    @FXML private javafx.scene.control.Button btnSettings;
+    @FXML private javafx.scene.control.Button btnLogout;
 
     private final CatalogViewModel catalogViewModel = new CatalogViewModel();
     private BasketViewModel basketViewModel;
@@ -38,10 +41,18 @@ public class MainController {
                         new RentalService(
                                 new JdbcRentalRepository(), new JdbcRentalItemRepository()),
                         new JdbcRentalRepository(),
-                        new JdbcCostumeRepository(),
+                        com.oliinyk.costumes.repository.RepositoryProvider.getCostumeRepository(),
                         new JdbcUserRepository());
 
         basketViewModel = new BasketViewModel(rentalFacade);
+
+        // i18n bindings
+        btnCatalog.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.catalog"));
+        btnBasket.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.basket"));
+        btnMyRentals.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.myrentals"));
+        btnAdmin.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.admin"));
+        btnSettings.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.settings"));
+        btnLogout.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.logout"));
 
         // Ховаємо кнопки залежно від ролі (Вимога розділу 2.2)
         com.oliinyk.costumes.model.User user =

@@ -34,10 +34,12 @@ public class AdminPanelController {
     @FXML private javafx.scene.chart.PieChart statusChart;
     @FXML private javafx.scene.chart.BarChart<String, Number> popularityChart;
 
-    private final JdbcCostumeRepository costumeRepo = new JdbcCostumeRepository();
+    private final com.oliinyk.costumes.repository.CostumeRepository costumeRepo = com.oliinyk.costumes.repository.RepositoryProvider.getCostumeRepository();
     private final JdbcUserRepository userRepo = new JdbcUserRepository();
     private final com.oliinyk.costumes.service.ReportService reportService =
             new com.oliinyk.costumes.service.ReportService();
+    private final com.oliinyk.costumes.service.BackupService backupService =
+            new com.oliinyk.costumes.service.BackupService();
     private RentalFacade rentalFacade;
 
     private ObservableList<Costume> costumesData = FXCollections.observableArrayList();
@@ -50,7 +52,7 @@ public class AdminPanelController {
                         new RentalService(
                                 new JdbcRentalRepository(), new JdbcRentalItemRepository()),
                         new JdbcRentalRepository(),
-                        new JdbcCostumeRepository(),
+                        com.oliinyk.costumes.repository.RepositoryProvider.getCostumeRepository(),
                         new JdbcUserRepository());
 
         setupTables();
@@ -171,6 +173,68 @@ public class AdminPanelController {
             }
         } catch (java.io.IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void onBackupCostumesClicked() {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Зберегти Backup");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("JSON файли", "*.json"));
+        fileChooser.setInitialFileName("costumes_backup_" + java.time.LocalDate.now() + ".json");
+        java.io.File file = fileChooser.showSaveDialog(costumesTable.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                backupService.exportCostumes(costumeRepo.findAll(), file);
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Успіх");
+                alert.setHeaderText(null);
+                alert.setContentText("Backup успішно збережено у файл.");
+                alert.showAndWait();
+            } catch (Exception e) {
+                e.printStackTrace();
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Помилка");
+                alert.setHeaderText("Не вдалося зберегти backup");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
+    }
+
+    @FXML
+    private void onRestoreCostumesClicked() {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Вибрати Backup для відновлення");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("JSON файли", "*.json"));
+        java.io.File file = fileChooser.showOpenDialog(costumesTable.getScene().getWindow());
+
+        if (file != null) {
+            try {
+                List<Costume> restored = backupService.importCostumes(file);
+                for (Costume c : restored) {
+                    // Якщо костюм з таким ID існує - оновлюємо, інакше - додаємо
+                    if (costumeRepo.findById(c.getId()).isPresent()) {
+                        costumeRepo.update(c);
+                    } else {
+                        costumeRepo.save(c);
+                    }
+                }
+                loadDataAsync();
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Успіх");
+                alert.setHeaderText(null);
+                alert.setContentText("Дані успішно відновлено!");
+                alert.showAndWait();
+            } catch (Exception e) {
+                e.printStackTrace();
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Помилка");
+                alert.setHeaderText("Не вдалося відновити дані");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
         }
     }
 

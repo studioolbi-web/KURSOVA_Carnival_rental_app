@@ -71,7 +71,7 @@ public class CatalogViewModel {
     /** Завантажує список костюмів з репозиторію. */
     public void loadFromDatabase() {
         com.oliinyk.costumes.repository.CostumeRepository repo =
-                new com.oliinyk.costumes.repository.JdbcCostumeRepository();
+                com.oliinyk.costumes.repository.RepositoryProvider.getCostumeRepository();
         costumes.setAll(repo.findAll());
     }
 }

@@ -35,7 +35,7 @@ public class MyRentalsController {
                         new RentalService(
                                 new JdbcRentalRepository(), new JdbcRentalItemRepository()),
                         new JdbcRentalRepository(),
-                        new JdbcCostumeRepository(),
+                        com.oliinyk.costumes.repository.RepositoryProvider.getCostumeRepository(),
                         new JdbcUserRepository());
 
         setupTable();
