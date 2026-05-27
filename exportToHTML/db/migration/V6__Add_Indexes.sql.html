@@ -1,0 +1,26 @@
+<html>
+<head>
+<title>V6__Add_Indexes.sql</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+V6__Add_Indexes.sql</font>
+</center></td></tr></table>
+<pre><span class="s0">-- Створення індексів для оптимізації пошуку</span>
+<span class="s0">-- Вимога розділу 3.4</span>
+
+<span class="s2">CREATE INDEX </span><span class="s1">idx_users_email </span><span class="s2">ON </span><span class="s1">users(email);</span>
+<span class="s2">CREATE INDEX </span><span class="s1">idx_costumes_name </span><span class="s2">ON </span><span class="s1">costumes(</span><span class="s2">name</span><span class="s1">);</span>
+<span class="s2">CREATE INDEX </span><span class="s1">idx_rentals_user_id </span><span class="s2">ON </span><span class="s1">rentals(user_id);</span>
+<span class="s2">CREATE INDEX </span><span class="s1">idx_rental_items_rental_id </span><span class="s2">ON </span><span class="s1">rental_items(rental_id);</span>
+</pre>
+</body>
+</html>

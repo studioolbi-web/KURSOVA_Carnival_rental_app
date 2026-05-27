@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>UserRepository.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+UserRepository.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.repository;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Репозиторій для управління даними користувачів. Розширює базовий інтерфейс Repository для моделі</span>
+ <span class="s2">* User.</span>
+ <span class="s2">*/</span>
+<span class="s0">public interface </span><span class="s1">UserRepository </span><span class="s0">extends </span><span class="s1">Repository&lt;User&gt; {</span>
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить користувача за його електронною поштою.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">email електронна пошта користувача для пошуку</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional, що містить знайденого користувача, або порожній Optional, якщо користувача</span>
+     <span class="s2">*     не знайдено</span>
+     <span class="s2">*/</span>
+    <span class="s1">Optional&lt;User&gt; findByEmail(String email);</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

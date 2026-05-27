@@ -1,0 +1,151 @@
+<html>
+<head>
+<title>AuthServiceTest.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #067d17;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+AuthServiceTest.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import static </span><span class="s1">org.junit.jupiter.api.Assertions.*;</span>
+<span class="s0">import static </span><span class="s1">org.mockito.Mockito.*;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.UserRepository;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.BeforeEach;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.Test;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.extension.ExtendWith;</span>
+<span class="s0">import </span><span class="s1">org.mindrot.jbcrypt.BCrypt;</span>
+<span class="s0">import </span><span class="s1">org.mockito.Mock;</span>
+<span class="s0">import </span><span class="s1">org.mockito.junit.jupiter.MockitoExtension;</span>
+
+<span class="s1">@ExtendWith(MockitoExtension.</span><span class="s0">class</span><span class="s1">)</span>
+<span class="s0">class </span><span class="s1">AuthServiceTest {</span>
+
+    <span class="s1">@Mock </span><span class="s0">private </span><span class="s1">UserRepository userRepository;</span>
+
+    <span class="s1">@Mock </span><span class="s0">private </span><span class="s1">EmailService emailService;</span>
+
+    <span class="s0">private </span><span class="s1">AuthService authService;</span>
+
+    <span class="s1">@BeforeEach</span>
+    <span class="s0">void </span><span class="s1">setUp() {</span>
+        <span class="s1">authService = </span><span class="s0">new </span><span class="s1">AuthService(userRepository, emailService);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">registerUser_Successful() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;test@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">String password = </span><span class="s2">&quot;password&quot;</span><span class="s1">;</span>
+        <span class="s1">String role = </span><span class="s2">&quot;USER&quot;</span><span class="s1">;</span>
+
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.empty());</span>
+
+        <span class="s1">User registeredUser = authService.registerUser(email, password, role);</span>
+
+        <span class="s1">assertNotNull(registeredUser);</span>
+        <span class="s1">assertEquals(email, registeredUser.getEmail());</span>
+        <span class="s1">assertTrue(BCrypt.checkpw(password, registeredUser.getPasswordHash()));</span>
+        <span class="s1">assertFalse(registeredUser.isVerified());</span>
+        <span class="s1">verify(userRepository).save(any(User.</span><span class="s0">class</span><span class="s1">));</span>
+        <span class="s1">verify(emailService).sendVerificationEmail(eq(email), anyString());</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">registerUser_UserAlreadyExists_ThrowsException() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;existing@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.of(</span><span class="s0">new </span><span class="s1">User()));</span>
+
+        <span class="s1">assertThrows(</span>
+                <span class="s1">IllegalArgumentException.</span><span class="s0">class</span><span class="s1">,</span>
+                <span class="s1">() -&gt; authService.registerUser(email, </span><span class="s2">&quot;password&quot;</span><span class="s1">, </span><span class="s2">&quot;USER&quot;</span><span class="s1">));</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">login_Successful() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;test@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">String password = </span><span class="s2">&quot;password&quot;</span><span class="s1">;</span>
+        <span class="s1">String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());</span>
+        <span class="s1">User user =</span>
+                <span class="s1">User.builder().email(email).passwordHash(hashedPassword).isBlocked(</span><span class="s0">false</span><span class="s1">).build();</span>
+
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));</span>
+
+        <span class="s1">Optional&lt;User&gt; result = authService.login(email, password);</span>
+
+        <span class="s1">assertTrue(result.isPresent());</span>
+        <span class="s1">assertEquals(email, result.get().getEmail());</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">login_InvalidPassword_ReturnsEmpty() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;test@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">String password = </span><span class="s2">&quot;wrongpassword&quot;</span><span class="s1">;</span>
+        <span class="s1">String hashedPassword = BCrypt.hashpw(</span><span class="s2">&quot;correctpassword&quot;</span><span class="s1">, BCrypt.gensalt());</span>
+        <span class="s1">User user = User.builder().email(email).passwordHash(hashedPassword).build();</span>
+
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));</span>
+
+        <span class="s1">Optional&lt;User&gt; result = authService.login(email, password);</span>
+
+        <span class="s1">assertTrue(result.isEmpty());</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">login_UserBlocked_ThrowsException() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;blocked@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">String password = </span><span class="s2">&quot;password&quot;</span><span class="s1">;</span>
+        <span class="s1">String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());</span>
+        <span class="s1">User user =</span>
+                <span class="s1">User.builder().email(email).passwordHash(hashedPassword).isBlocked(</span><span class="s0">true</span><span class="s1">).build();</span>
+
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));</span>
+
+        <span class="s1">RuntimeException exception =</span>
+                <span class="s1">assertThrows(RuntimeException.</span><span class="s0">class</span><span class="s1">, () -&gt; authService.login(email, password));</span>
+        <span class="s1">assertEquals(</span><span class="s2">&quot;Ваш акаунт заблоковано адміністратором.&quot;</span><span class="s1">, exception.getMessage());</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">verifyUser_Successful() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;test@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">String code = </span><span class="s2">&quot;123456&quot;</span><span class="s1">;</span>
+        <span class="s1">User user = User.builder().email(email).verificationCode(code).isVerified(</span><span class="s0">false</span><span class="s1">).build();</span>
+
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));</span>
+
+        <span class="s0">boolean </span><span class="s1">result = authService.verifyUser(email, code);</span>
+
+        <span class="s1">assertTrue(result);</span>
+        <span class="s1">assertTrue(user.isVerified());</span>
+        <span class="s1">assertNull(user.getVerificationCode());</span>
+        <span class="s1">verify(userRepository).update(user);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">verifyUser_WrongCode_ReturnsFalse() {</span>
+        <span class="s1">String email = </span><span class="s2">&quot;test@example.com&quot;</span><span class="s1">;</span>
+        <span class="s1">User user =</span>
+                <span class="s1">User.builder().email(email).verificationCode(</span><span class="s2">&quot;111111&quot;</span><span class="s1">).isVerified(</span><span class="s0">false</span><span class="s1">).build();</span>
+
+        <span class="s1">when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));</span>
+
+        <span class="s0">boolean </span><span class="s1">result = authService.verifyUser(email, </span><span class="s2">&quot;222222&quot;</span><span class="s1">);</span>
+
+        <span class="s1">assertFalse(result);</span>
+        <span class="s1">assertFalse(user.isVerified());</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

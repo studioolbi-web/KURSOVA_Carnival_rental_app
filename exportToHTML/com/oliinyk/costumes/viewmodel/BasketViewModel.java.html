@@ -1,0 +1,181 @@
+<html>
+<head>
+<title>BasketViewModel.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #1750eb;}
+.s4 { color: #067d17;}
+.s5 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+BasketViewModel.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.viewmodel;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.BasketService;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalFacade;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.SessionManager;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.time.temporal.ChronoUnit;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.ObjectProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleObjectProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleStringProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.StringProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.FXCollections;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.ObservableList;</span>
+
+<span class="s2">/** ViewModel для кошика. Інкапсулює бізнес-логіку та стан для BasketController. */</span>
+<span class="s0">public class </span><span class="s1">BasketViewModel {</span>
+
+    <span class="s0">private final </span><span class="s1">RentalFacade rentalFacade;</span>
+    <span class="s0">private final </span><span class="s1">BasketService basketService = BasketService.getInstance();</span>
+
+    <span class="s0">private final </span><span class="s1">ObservableList&lt;Costume&gt; items = FXCollections.observableArrayList();</span>
+    <span class="s0">private final </span><span class="s1">ObjectProperty&lt;LocalDate&gt; startDate = </span><span class="s0">new </span><span class="s1">SimpleObjectProperty&lt;&gt;(LocalDate.now());</span>
+    <span class="s0">private final </span><span class="s1">ObjectProperty&lt;LocalDate&gt; endDate =</span>
+            <span class="s0">new </span><span class="s1">SimpleObjectProperty&lt;&gt;(LocalDate.now().plusDays(</span><span class="s3">1</span><span class="s1">));</span>
+    <span class="s0">private final </span><span class="s1">StringProperty totalPrice = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s4">&quot;0.00 грн&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty depositTotal = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s4">&quot;0.00 грн&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty discountAmount = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s4">&quot;0.00 грн&quot;</span><span class="s1">);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор ViewModel кошика.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s5">@param </span><span class="s2">rentalFacade фасад для оформлення оренди</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BasketViewModel(RentalFacade rentalFacade) {</span>
+        <span class="s0">this</span><span class="s1">.rentalFacade = rentalFacade;</span>
+        <span class="s1">refresh();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/** Оновлює список елементів у кошику та перераховує вартість. */</span>
+    <span class="s0">public void </span><span class="s1">refresh() {</span>
+        <span class="s1">items.setAll(basketService.getItems());</span>
+        <span class="s1">recalculate();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/** Перераховує загальну вартість оренди, заставу та знижку на основі вибраних дат. */</span>
+    <span class="s0">public void </span><span class="s1">recalculate() {</span>
+        <span class="s0">if </span><span class="s1">(startDate.get() != </span><span class="s0">null </span><span class="s1">&amp;&amp; endDate.get() != </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s0">long </span><span class="s1">days = ChronoUnit.DAYS.between(startDate.get(), endDate.get());</span>
+            <span class="s0">if </span><span class="s1">(days &lt;= </span><span class="s3">0</span><span class="s1">) days = </span><span class="s3">1</span><span class="s1">;</span>
+
+            <span class="s1">BigDecimal rentalTotal = basketService.calculateRentalTotal(days);</span>
+            <span class="s1">BigDecimal deposit = basketService.calculateTotalDeposit();</span>
+            <span class="s1">BigDecimal discount = basketService.calculateDiscount(days);</span>
+
+            <span class="s1">totalPrice.set(String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, rentalTotal.add(deposit)));</span>
+            <span class="s1">depositTotal.set(String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, deposit));</span>
+            <span class="s1">discountAmount.set(String.format(</span><span class="s4">&quot;-%.2f грн&quot;</span><span class="s1">, discount));</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оформлює замовлення (checkout). Створює записи про оренду в базі даних та очищує кошик.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s5">@throws </span><span class="s2">IllegalStateException якщо користувач не авторизований або кошик порожній</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">checkout() {</span>
+        <span class="s1">User user = SessionManager.getInstance().getCurrentUser();</span>
+        <span class="s0">if </span><span class="s1">(user == </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalStateException(</span><span class="s4">&quot;Будь ласка, авторизуйтесь.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+        <span class="s0">if </span><span class="s1">(items.isEmpty()) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalStateException(</span><span class="s4">&quot;Кошик порожній.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+
+        <span class="s1">rentalFacade.checkout(user, items, startDate.get(), endDate.get());</span>
+        <span class="s1">basketService.clear();</span>
+        <span class="s1">refresh();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">ObservableList елементів у кошику</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">ObservableList&lt;Costume&gt; getItems() {</span>
+        <span class="s0">return </span><span class="s1">items;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">властивість дати початку оренди</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">ObjectProperty&lt;LocalDate&gt; startDateProperty() {</span>
+        <span class="s0">return </span><span class="s1">startDate;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">властивість дати завершення оренди</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">ObjectProperty&lt;LocalDate&gt; endDateProperty() {</span>
+        <span class="s0">return </span><span class="s1">endDate;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">властивість загальної вартості</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty totalPriceProperty() {</span>
+        <span class="s0">return </span><span class="s1">totalPrice;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">властивість загальної суми застави</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty depositTotalProperty() {</span>
+        <span class="s0">return </span><span class="s1">depositTotal;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">властивість суми знижки</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty discountAmountProperty() {</span>
+        <span class="s0">return </span><span class="s1">discountAmount;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">копія списку елементів у кошику</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">List&lt;Costume&gt; getItemsSnapshot() {</span>
+        <span class="s0">return </span><span class="s1">basketService.getItems();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Розраховує вартість оренди для вказаної кількості днів.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s5">@param </span><span class="s2">days кількість днів оренди</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">сума вартості оренди</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BigDecimal getRentalTotal(</span><span class="s0">long </span><span class="s1">days) {</span>
+        <span class="s0">return </span><span class="s1">basketService.calculateRentalTotal(days);</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">сумарна сума застави за всі предмети</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BigDecimal getTotalDeposit() {</span>
+        <span class="s0">return </span><span class="s1">basketService.calculateTotalDeposit();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Розраховує суму знижки.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s5">@param </span><span class="s2">days кількість днів оренди</span>
+     <span class="s2">* </span><span class="s5">@return </span><span class="s2">сума знижки</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BigDecimal getDiscount(</span><span class="s0">long </span><span class="s1">days) {</span>
+        <span class="s0">return </span><span class="s1">basketService.calculateDiscount(days);</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<html>
+<head>
+<title>LoginViewModel.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+LoginViewModel.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.viewmodel;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.AuthService;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.BooleanProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleBooleanProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleStringProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.StringProperty;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* ViewModel для вікна входу в систему. Забезпечує зв'язок між інтерфейсом користувача та сервісом</span>
+ <span class="s2">* аутентифікації.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">LoginViewModel {</span>
+
+    <span class="s0">private final </span><span class="s1">AuthService authService;</span>
+
+    <span class="s0">private final </span><span class="s1">StringProperty email = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty password = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty errorMessage = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">BooleanProperty loginSuccessful = </span><span class="s0">new </span><span class="s1">SimpleBooleanProperty(</span><span class="s0">false</span><span class="s1">);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор ViewModel для входу.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@param </span><span class="s2">authService сервіс аутентифікації для перевірки даних</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">LoginViewModel(AuthService authService) {</span>
+        <span class="s0">this</span><span class="s1">.authService = authService;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає властивість для поля електронної пошти.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">StringProperty для email</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty emailProperty() {</span>
+        <span class="s0">return </span><span class="s1">email;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає властивість для поля пароля.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">StringProperty для пароля</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty passwordProperty() {</span>
+        <span class="s0">return </span><span class="s1">password;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає властивість для повідомлення про помилку.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">StringProperty для тексту помилки</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty errorMessageProperty() {</span>
+        <span class="s0">return </span><span class="s1">errorMessage;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає властивість, що вказує на успішність входу.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">BooleanProperty успішності входу</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BooleanProperty loginSuccessfulProperty() {</span>
+        <span class="s0">return </span><span class="s1">loginSuccessful;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Здійснює спробу входу в систему. Перевіряє введені дані та оновлює статус входу або</span>
+     <span class="s2">* повідомлення про помилку.</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">attemptLogin() {</span>
+        <span class="s0">if </span><span class="s1">(email.get() == </span><span class="s0">null </span><span class="s1">|| email.get().isEmpty()) {</span>
+            <span class="s1">errorMessage.set(</span><span class="s3">&quot;Email не може бути порожнім&quot;</span><span class="s1">);</span>
+            <span class="s0">return</span><span class="s1">;</span>
+        <span class="s1">}</span>
+
+        <span class="s1">authService</span>
+                <span class="s1">.login(email.get(), password.get())</span>
+                <span class="s1">.ifPresentOrElse(</span>
+                        <span class="s1">user -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(!user.isVerified()) {</span>
+                                <span class="s1">errorMessage.set(</span><span class="s3">&quot;Акаунт не верифіковано.&quot;</span><span class="s1">);</span>
+                                <span class="s1">loginSuccessful.set(</span><span class="s0">false</span><span class="s1">);</span>
+                            <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                <span class="s1">com.oliinyk.costumes.service.SessionManager.getInstance()</span>
+                                        <span class="s1">.login(user);</span>
+                                <span class="s1">errorMessage.set(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+                                <span class="s1">loginSuccessful.set(</span><span class="s0">true</span><span class="s1">);</span>
+                            <span class="s1">}</span>
+                        <span class="s1">},</span>
+                        <span class="s1">() -&gt; errorMessage.set(</span><span class="s3">&quot;Неправильний email або пароль&quot;</span><span class="s1">));</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

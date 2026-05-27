@@ -1,0 +1,251 @@
+<html>
+<head>
+<title>JdbcRentalRepository.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+JdbcRentalRepository.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.repository;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.infrastructure.DatabaseManager;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Rental;</span>
+<span class="s0">import </span><span class="s1">java.sql.Connection;</span>
+<span class="s0">import </span><span class="s1">java.sql.PreparedStatement;</span>
+<span class="s0">import </span><span class="s1">java.sql.ResultSet;</span>
+<span class="s0">import </span><span class="s1">java.sql.SQLException;</span>
+<span class="s0">import </span><span class="s1">java.util.ArrayList;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* JDBC реалізація репозиторію оренди. Підтримує транзакційність та забезпечує взаємодію з таблицею</span>
+ <span class="s2">* rentals.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">JdbcRentalRepository </span><span class="s0">implements </span><span class="s1">RentalRepository {</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Зберігає нову оренду в базі даних. Створює нове з'єднання для виконання операції.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rental об'єкт оренди для збереження</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">save(Rental rental) {</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection()) {</span>
+            <span class="s1">save(rental, conn);</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при збереженні оренди&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Зберігає оренду в межах існуючої транзакції.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rental об'єкт оренди для збереження</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">conn існуюче SQL з'єднання</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">save(Rental rental, Connection conn) {</span>
+        <span class="s1">String sql =</span>
+                <span class="s4">&quot;INSERT INTO rentals (id, user_id, start_date, end_date, total_price, penalty_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, rental.getId());</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">2</span><span class="s1">, rental.getUserId());</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">3</span><span class="s1">, java.sql.Date.valueOf(rental.getStartDate()));</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">4</span><span class="s1">, java.sql.Date.valueOf(rental.getEndDate()));</span>
+            <span class="s1">stmt.setBigDecimal(</span><span class="s5">5</span><span class="s1">, rental.getTotalPrice());</span>
+            <span class="s1">stmt.setBigDecimal(</span><span class="s5">6</span><span class="s1">, rental.getPenaltyAmount());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">7</span><span class="s1">, rental.getStatus());</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при збереженні оренди в транзакції&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить оренду за її ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id унікальний ідентифікатор оренди</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional з орендою, якщо знайдено, або порожній Optional</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">Optional&lt;Rental&gt; findById(UUID id) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM rentals WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, id);</span>
+            <span class="s0">try </span><span class="s1">(ResultSet rs = stmt.executeQuery()) {</span>
+                <span class="s0">if </span><span class="s1">(rs.next()) {</span>
+                    <span class="s0">return </span><span class="s1">Optional.of(mapResultSetToRental(rs));</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при пошуку оренди за ID&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">Optional.empty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає список усіх оренд з бази даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">список усіх оренд</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">List&lt;Rental&gt; findAll() {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM rentals&quot;</span><span class="s1">;</span>
+        <span class="s1">List&lt;Rental&gt; rentals = </span><span class="s0">new </span><span class="s1">ArrayList&lt;&gt;();</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql);</span>
+                <span class="s1">ResultSet rs = stmt.executeQuery()) {</span>
+            <span class="s0">while </span><span class="s1">(rs.next()) {</span>
+                <span class="s1">rentals.add(mapResultSetToRental(rs));</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при отриманні всіх оренд&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">rentals;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить усі оренди конкретного користувача.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">userId унікальний ідентифікатор користувача</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">список оренд користувача</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">List&lt;Rental&gt; findByUserId(UUID userId) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM rentals WHERE user_id = ?&quot;</span><span class="s1">;</span>
+        <span class="s1">List&lt;Rental&gt; rentals = </span><span class="s0">new </span><span class="s1">ArrayList&lt;&gt;();</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, userId);</span>
+            <span class="s0">try </span><span class="s1">(ResultSet rs = stmt.executeQuery()) {</span>
+                <span class="s0">while </span><span class="s1">(rs.next()) {</span>
+                    <span class="s1">rentals.add(mapResultSetToRental(rs));</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при пошуку оренд користувача&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">rentals;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оновлює дані існуючої оренди в базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rental об'єкт оренди з оновленими даними</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">update(Rental rental) {</span>
+        <span class="s1">String sql =</span>
+                <span class="s4">&quot;UPDATE rentals SET user_id = ?, start_date = ?, end_date = ?, total_price = ?, penalty_amount = ?, status = ? WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, rental.getUserId());</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">2</span><span class="s1">, java.sql.Date.valueOf(rental.getStartDate()));</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">3</span><span class="s1">, java.sql.Date.valueOf(rental.getEndDate()));</span>
+            <span class="s1">stmt.setBigDecimal(</span><span class="s5">4</span><span class="s1">, rental.getTotalPrice());</span>
+            <span class="s1">stmt.setBigDecimal(</span><span class="s5">5</span><span class="s1">, rental.getPenaltyAmount());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">6</span><span class="s1">, rental.getStatus());</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">7</span><span class="s1">, rental.getId());</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при оновленні оренди&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Видаляє оренду за її ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id унікальний ідентифікатор оренди для видалення</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">delete(UUID id) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;DELETE FROM rentals WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, id);</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при видаленні оренди&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Перевіряє, чи доступний костюм для оренди на вказаний період. Костюм вважається зайнятим,</span>
+     <span class="s2">* якщо він є в активній оренді або резерві, що перетинається з вказаними датами.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumeId унікальний ідентифікатор костюма</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">start дата початку бажаного періоду оренди</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">end дата закінчення бажаного періоду оренди</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">true, якщо костюм вільний, false — якщо зайнятий</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">isCostumeAvailable(</span>
+            <span class="s1">UUID costumeId, java.time.LocalDate start, java.time.LocalDate end) {</span>
+        <span class="s2">// Умова перетину періодів [A, B] та [C, D]: A &lt;= D AND B &gt;= C</span>
+        <span class="s2">// Критичний баг 1: Костюм зайнятий, якщо статус ACTIVE, RESERVED, ISSUED або OVERDUE</span>
+        <span class="s2">// (Вимога стабільності)</span>
+        <span class="s1">String sql =</span>
+                <span class="s4">&quot;SELECT COUNT(*) FROM rentals r &quot;</span>
+                        <span class="s1">+ </span><span class="s4">&quot;JOIN rental_items ri ON r.id = ri.rental_id &quot;</span>
+                        <span class="s1">+ </span><span class="s4">&quot;WHERE ri.costume_id = ? AND r.status IN ('ACTIVE', 'RESERVED', 'ISSUED', 'OVERDUE') &quot;</span>
+                        <span class="s1">+ </span><span class="s4">&quot;AND r.start_date &lt;= ? AND r.end_date &gt;= ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, costumeId);</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">2</span><span class="s1">, java.sql.Date.valueOf(end)); </span><span class="s2">// r.start_date &lt;= end</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">3</span><span class="s1">, java.sql.Date.valueOf(start)); </span><span class="s2">// r.end_date &gt;= start</span>
+            <span class="s0">try </span><span class="s1">(ResultSet rs = stmt.executeQuery()) {</span>
+                <span class="s0">if </span><span class="s1">(rs.next()) {</span>
+                    <span class="s0">return </span><span class="s1">rs.getInt(</span><span class="s5">1</span><span class="s1">) == </span><span class="s5">0</span><span class="s1">;</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при перевірці доступності костюма&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return false</span><span class="s1">;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Перетворює рядок ResultSet у об'єкт Rental.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rs ResultSet з результатами запиту</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">об'єкт Rental</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">SQLException якщо виникла помилка при читанні з ResultSet</span>
+     <span class="s2">*/</span>
+    <span class="s0">private </span><span class="s1">Rental mapResultSetToRental(ResultSet rs) </span><span class="s0">throws </span><span class="s1">SQLException {</span>
+        <span class="s0">return </span><span class="s1">Rental.builder()</span>
+                <span class="s1">.id(rs.getObject(</span><span class="s4">&quot;id&quot;</span><span class="s1">, UUID.</span><span class="s0">class</span><span class="s1">))</span>
+                <span class="s1">.userId(rs.getObject(</span><span class="s4">&quot;user_id&quot;</span><span class="s1">, UUID.</span><span class="s0">class</span><span class="s1">))</span>
+                <span class="s1">.startDate(rs.getDate(</span><span class="s4">&quot;start_date&quot;</span><span class="s1">).toLocalDate())</span>
+                <span class="s1">.endDate(rs.getDate(</span><span class="s4">&quot;end_date&quot;</span><span class="s1">).toLocalDate())</span>
+                <span class="s1">.totalPrice(rs.getBigDecimal(</span><span class="s4">&quot;total_price&quot;</span><span class="s1">))</span>
+                <span class="s1">.penaltyAmount(rs.getBigDecimal(</span><span class="s4">&quot;penalty_amount&quot;</span><span class="s1">))</span>
+                <span class="s1">.status(rs.getString(</span><span class="s4">&quot;status&quot;</span><span class="s1">))</span>
+                <span class="s1">.build();</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

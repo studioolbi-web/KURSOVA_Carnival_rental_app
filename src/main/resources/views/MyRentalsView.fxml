@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20.0" style="-fx-padding: 30; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.MyRentalsController">
+    <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Мої Оренди" />
+    
+    <TableView fx:id="rentalsTable" VBox.vgrow="ALWAYS">
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+        </columnResizePolicy>
+        <columns>
+            <TableColumn fx:id="costumesCol" text="Костюми" prefWidth="350" />
+            <TableColumn fx:id="startCol" text="Дата Початку" prefWidth="150" />
+            <TableColumn fx:id="endCol" text="Дата Кінця" prefWidth="150" />
+            <TableColumn fx:id="statusCol" text="Статус" prefWidth="150" />
+            <TableColumn fx:id="totalCol" text="Сума" prefWidth="120" />
+        </columns>
+    </TableView>
+</VBox>

@@ -1,0 +1,636 @@
+<html>
+<head>
+<title>AdminPanelController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #1750eb;}
+.s4 { color: #067d17;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+AdminPanelController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.dto.RentalDTO;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcCostumeRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalItemRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcUserRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalFacade;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalService;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleStringProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.FXCollections;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.ObservableList;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.transformation.FilteredList;</span>
+<span class="s0">import </span><span class="s1">javafx.concurrent.Task;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.ComboBox;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.TableColumn;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.TableView;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.TextField;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Контролер панелі адміністратора. Реалізує CRUD операції, асинхронне завантаження та фільтрацію</span>
+ <span class="s2">* (Вимоги 5.1, 5.2, 4.4.5).</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">AdminPanelController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableView&lt;Costume&gt; costumesTable;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableView&lt;User&gt; usersTable;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableView&lt;RentalDTO&gt; rentalsTable;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField costumeSearchField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">javafx.scene.chart.PieChart statusChart;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">javafx.scene.chart.BarChart&lt;String, Number&gt; popularityChart;</span>
+
+    <span class="s0">private final </span><span class="s1">JdbcCostumeRepository costumeRepo = </span><span class="s0">new </span><span class="s1">JdbcCostumeRepository();</span>
+    <span class="s0">private final </span><span class="s1">JdbcUserRepository userRepo = </span><span class="s0">new </span><span class="s1">JdbcUserRepository();</span>
+    <span class="s0">private final </span><span class="s1">com.oliinyk.costumes.service.ReportService reportService =</span>
+            <span class="s0">new </span><span class="s1">com.oliinyk.costumes.service.ReportService();</span>
+    <span class="s0">private </span><span class="s1">RentalFacade rentalFacade;</span>
+
+    <span class="s0">private </span><span class="s1">ObservableList&lt;Costume&gt; costumesData = FXCollections.observableArrayList();</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">public void </span><span class="s1">initialize() {</span>
+        <span class="s2">// Ініціалізація фасаду</span>
+        <span class="s1">rentalFacade =</span>
+                <span class="s0">new </span><span class="s1">RentalFacade(</span>
+                        <span class="s0">new </span><span class="s1">RentalService(</span>
+                                <span class="s0">new </span><span class="s1">JdbcRentalRepository(), </span><span class="s0">new </span><span class="s1">JdbcRentalItemRepository()),</span>
+                        <span class="s0">new </span><span class="s1">JdbcRentalRepository(),</span>
+                        <span class="s0">new </span><span class="s1">JdbcCostumeRepository(),</span>
+                        <span class="s0">new </span><span class="s1">JdbcUserRepository());</span>
+
+        <span class="s1">setupTables();</span>
+        <span class="s1">loadDataAsync();</span>
+        <span class="s1">setupSearch();</span>
+
+        <span class="s2">// Візуальний баг 1: Поворот тексту на осі X (Вимога UX)</span>
+        <span class="s1">javafx.scene.chart.CategoryAxis xAxis =</span>
+                <span class="s1">(javafx.scene.chart.CategoryAxis) popularityChart.getXAxis();</span>
+        <span class="s1">xAxis.setTickLabelRotation(-</span><span class="s3">45</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupTables() {</span>
+        <span class="s1">setupCostumesTable();</span>
+        <span class="s1">setupUsersTable();</span>
+        <span class="s1">setupRentalsTable();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupCostumesTable() {</span>
+        <span class="s1">TableColumn&lt;Costume, String&gt; nameCol =</span>
+                <span class="s1">(TableColumn&lt;Costume, String&gt;) costumesTable.getColumns().get(</span><span class="s3">0</span><span class="s1">);</span>
+        <span class="s1">nameCol.setCellValueFactory(data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getName()));</span>
+
+        <span class="s1">TableColumn&lt;Costume, String&gt; descCol =</span>
+                <span class="s1">(TableColumn&lt;Costume, String&gt;) costumesTable.getColumns().get(</span><span class="s3">1</span><span class="s1">);</span>
+        <span class="s1">descCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getDescription()));</span>
+
+        <span class="s1">TableColumn&lt;Costume, String&gt; priceCol =</span>
+                <span class="s1">(TableColumn&lt;Costume, String&gt;) costumesTable.getColumns().get(</span><span class="s3">2</span><span class="s1">);</span>
+        <span class="s1">priceCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt;</span>
+                        <span class="s0">new </span><span class="s1">SimpleStringProperty(</span>
+                                <span class="s1">String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, data.getValue().getPricePerDay())));</span>
+
+        <span class="s2">// Додавання кнопок дій (Вимога 5.1 CRUD)</span>
+        <span class="s1">TableColumn&lt;Costume, Void&gt; actionCol =</span>
+                <span class="s1">(TableColumn&lt;Costume, Void&gt;) costumesTable.getColumns().get(</span><span class="s3">3</span><span class="s1">);</span>
+        <span class="s1">actionCol.setCellFactory(</span>
+                <span class="s1">param -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s0">private final </span><span class="s1">javafx.scene.control.Button editBtn =</span>
+                                    <span class="s0">new </span><span class="s1">javafx.scene.control.Button();</span>
+                            <span class="s0">private final </span><span class="s1">javafx.scene.control.Button deleteBtn =</span>
+                                    <span class="s0">new </span><span class="s1">javafx.scene.control.Button();</span>
+                            <span class="s0">private final </span><span class="s1">javafx.scene.layout.HBox pane =</span>
+                                    <span class="s0">new </span><span class="s1">javafx.scene.layout.HBox(</span><span class="s3">10</span><span class="s1">, editBtn, deleteBtn);</span>
+
+                            <span class="s1">{</span>
+                                <span class="s1">editBtn.getStyleClass().addAll(</span><span class="s4">&quot;button-icon&quot;</span><span class="s1">, </span><span class="s4">&quot;flat&quot;</span><span class="s1">, </span><span class="s4">&quot;accent&quot;</span><span class="s1">);</span>
+                                <span class="s1">editBtn.setGraphic(</span>
+                                        <span class="s0">new </span><span class="s1">org.kordamp.ikonli.javafx.FontIcon(</span><span class="s4">&quot;fas-edit&quot;</span><span class="s1">));</span>
+                                <span class="s1">editBtn.setTooltip(</span><span class="s0">new </span><span class="s1">javafx.scene.control.Tooltip(</span><span class="s4">&quot;Редагувати&quot;</span><span class="s1">));</span>
+                                <span class="s1">editBtn.setOnAction(</span>
+                                        <span class="s1">event -&gt; {</span>
+                                            <span class="s1">Costume costume =</span>
+                                                    <span class="s1">getTableView().getItems().get(getIndex());</span>
+                                            <span class="s1">handleEditCostume(costume);</span>
+                                        <span class="s1">});</span>
+
+                                <span class="s1">deleteBtn.getStyleClass().addAll(</span><span class="s4">&quot;button-icon&quot;</span><span class="s1">, </span><span class="s4">&quot;flat&quot;</span><span class="s1">, </span><span class="s4">&quot;danger&quot;</span><span class="s1">);</span>
+                                <span class="s1">deleteBtn.setGraphic(</span>
+                                        <span class="s0">new </span><span class="s1">org.kordamp.ikonli.javafx.FontIcon(</span><span class="s4">&quot;fas-trash&quot;</span><span class="s1">));</span>
+                                <span class="s1">deleteBtn.setTooltip(</span><span class="s0">new </span><span class="s1">javafx.scene.control.Tooltip(</span><span class="s4">&quot;Видалити&quot;</span><span class="s1">));</span>
+                                <span class="s1">deleteBtn.setOnAction(</span>
+                                        <span class="s1">event -&gt; {</span>
+                                            <span class="s1">Costume costume =</span>
+                                                    <span class="s1">getTableView().getItems().get(getIndex());</span>
+                                            <span class="s1">handleDeleteCostume(costume);</span>
+                                        <span class="s1">});</span>
+                                <span class="s1">pane.setAlignment(javafx.geometry.Pos.CENTER);</span>
+                            <span class="s1">}</span>
+
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(Void item, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(item, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty) setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s0">else </span><span class="s1">setGraphic(pane);</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onAddCostumeClicked() {</span>
+        <span class="s1">showCostumeDialog(</span><span class="s0">null</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">handleEditCostume(Costume costume) {</span>
+        <span class="s1">showCostumeDialog(costume);</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">showCostumeDialog(Costume costume) {</span>
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">javafx.fxml.FXMLLoader loader =</span>
+                    <span class="s0">new </span><span class="s1">javafx.fxml.FXMLLoader(getClass().getResource(</span><span class="s4">&quot;/views/CostumeDialog.fxml&quot;</span><span class="s1">));</span>
+            <span class="s1">javafx.scene.layout.VBox page = loader.load();</span>
+
+            <span class="s1">javafx.stage.Stage dialogStage = </span><span class="s0">new </span><span class="s1">javafx.stage.Stage();</span>
+            <span class="s1">dialogStage.setTitle(costume == </span><span class="s0">null </span><span class="s1">? </span><span class="s4">&quot;Додати костюм&quot; </span><span class="s1">: </span><span class="s4">&quot;Редагувати костюм&quot;</span><span class="s1">);</span>
+            <span class="s1">dialogStage.initModality(javafx.stage.Modality.WINDOW_MODAL);</span>
+            <span class="s1">dialogStage.initOwner(costumesTable.getScene().getWindow());</span>
+            <span class="s1">javafx.scene.Scene scene = </span><span class="s0">new </span><span class="s1">javafx.scene.Scene(page);</span>
+            <span class="s1">dialogStage.setScene(scene);</span>
+
+            <span class="s1">CostumeDialogController controller = loader.getController();</span>
+            <span class="s1">controller.setCostume(costume);</span>
+
+            <span class="s1">dialogStage.showAndWait();</span>
+
+            <span class="s0">if </span><span class="s1">(controller.isSaveClicked()) {</span>
+                <span class="s1">Costume result = controller.getCostume();</span>
+                <span class="s0">if </span><span class="s1">(costume == </span><span class="s0">null</span><span class="s1">) {</span>
+                    <span class="s1">costumeRepo.save(result);</span>
+                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                    <span class="s1">costumeRepo.update(result);</span>
+                <span class="s1">}</span>
+                <span class="s1">loadDataAsync();</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(java.io.IOException e) {</span>
+            <span class="s1">e.printStackTrace();</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">handleDeleteCostume(Costume costume) {</span>
+        <span class="s1">javafx.scene.control.Alert alert =</span>
+                <span class="s0">new </span><span class="s1">javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);</span>
+        <span class="s1">alert.setTitle(</span><span class="s4">&quot;Підтвердження видалення&quot;</span><span class="s1">);</span>
+        <span class="s1">alert.setHeaderText(</span><span class="s4">&quot;Видалити костюм: &quot; </span><span class="s1">+ costume.getName() + </span><span class="s4">&quot;?&quot;</span><span class="s1">);</span>
+        <span class="s1">alert.setContentText(</span><span class="s4">&quot;Цю дію неможливо скасувати.&quot;</span><span class="s1">);</span>
+
+        <span class="s1">alert.showAndWait()</span>
+                <span class="s1">.ifPresent(</span>
+                        <span class="s1">response -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(response == javafx.scene.control.ButtonType.OK) {</span>
+                                <span class="s0">try </span><span class="s1">{</span>
+                                    <span class="s1">costumeRepo.delete(costume.getId());</span>
+                                    <span class="s1">loadDataAsync(); </span><span class="s2">// Перезавантаження даних</span>
+                                <span class="s1">} </span><span class="s0">catch </span><span class="s1">(Exception e) {</span>
+                                    <span class="s2">// Критичний баг 2: Обробка</span>
+                                    <span class="s2">// SQLIntegrityConstraintViolationException (Вимога</span>
+                                    <span class="s2">// стабільності)</span>
+                                    <span class="s1">javafx.scene.control.Alert errorAlert =</span>
+                                            <span class="s0">new </span><span class="s1">javafx.scene.control.Alert(</span>
+                                                    <span class="s1">javafx.scene.control.Alert.AlertType.ERROR);</span>
+                                    <span class="s1">errorAlert.setTitle(</span><span class="s4">&quot;Помилка видалення&quot;</span><span class="s1">);</span>
+                                    <span class="s1">errorAlert.setHeaderText(</span><span class="s0">null</span><span class="s1">);</span>
+                                    <span class="s1">errorAlert.setContentText(</span>
+                                            <span class="s4">&quot;Неможливо видалити костюм, оскільки він присутній в історії оренд користувачів&quot;</span><span class="s1">);</span>
+                                    <span class="s1">errorAlert.showAndWait();</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupUsersTable() {</span>
+        <span class="s1">TableColumn&lt;User, String&gt; emailCol =</span>
+                <span class="s1">(TableColumn&lt;User, String&gt;) usersTable.getColumns().get(</span><span class="s3">0</span><span class="s1">);</span>
+        <span class="s1">emailCol.setCellValueFactory(data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getEmail()));</span>
+
+        <span class="s1">TableColumn&lt;User, String&gt; roleCol =</span>
+                <span class="s1">(TableColumn&lt;User, String&gt;) usersTable.getColumns().get(</span><span class="s3">1</span><span class="s1">);</span>
+        <span class="s1">roleCol.setCellValueFactory(data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getRole()));</span>
+
+        <span class="s1">TableColumn&lt;User, String&gt; verifiedCol =</span>
+                <span class="s1">(TableColumn&lt;User, String&gt;) usersTable.getColumns().get(</span><span class="s3">2</span><span class="s1">);</span>
+        <span class="s1">verifiedCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().isVerified() ? </span><span class="s4">&quot;Так&quot; </span><span class="s1">: </span><span class="s4">&quot;Ні&quot;</span><span class="s1">));</span>
+        <span class="s1">verifiedCol.setCellFactory(</span>
+                <span class="s1">column -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(String val, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(val, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty || val == </span><span class="s0">null</span><span class="s1">) {</span>
+                                    <span class="s1">setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                    <span class="s1">javafx.scene.control.Label badge =</span>
+                                            <span class="s0">new </span><span class="s1">javafx.scene.control.Label(val);</span>
+                                    <span class="s1">badge.getStyleClass()</span>
+                                            <span class="s1">.addAll(</span>
+                                                    <span class="s4">&quot;badge&quot;</span><span class="s1">,</span>
+                                                    <span class="s4">&quot;Так&quot;</span><span class="s1">.equals(val) ? </span><span class="s4">&quot;success&quot; </span><span class="s1">: </span><span class="s4">&quot;subtle&quot;</span><span class="s1">);</span>
+                                    <span class="s1">setGraphic(badge);</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">TableColumn&lt;User, String&gt; blockedCol = </span><span class="s0">new </span><span class="s1">TableColumn&lt;&gt;(</span><span class="s4">&quot;Заблоковано&quot;</span><span class="s1">);</span>
+        <span class="s1">blockedCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().isBlocked() ? </span><span class="s4">&quot;Так&quot; </span><span class="s1">: </span><span class="s4">&quot;Ні&quot;</span><span class="s1">));</span>
+        <span class="s1">blockedCol.setCellFactory(</span>
+                <span class="s1">column -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(String val, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(val, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty || val == </span><span class="s0">null</span><span class="s1">) {</span>
+                                    <span class="s1">setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                    <span class="s1">javafx.scene.control.Label badge =</span>
+                                            <span class="s0">new </span><span class="s1">javafx.scene.control.Label(val);</span>
+                                    <span class="s1">badge.getStyleClass()</span>
+                                            <span class="s1">.addAll(</span>
+                                                    <span class="s4">&quot;badge&quot;</span><span class="s1">,</span>
+                                                    <span class="s4">&quot;Так&quot;</span><span class="s1">.equals(val) ? </span><span class="s4">&quot;danger&quot; </span><span class="s1">: </span><span class="s4">&quot;subtle&quot;</span><span class="s1">);</span>
+                                    <span class="s1">setGraphic(badge);</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">TableColumn&lt;User, Void&gt; actionCol = </span><span class="s0">new </span><span class="s1">TableColumn&lt;&gt;(</span><span class="s4">&quot;Дії&quot;</span><span class="s1">);</span>
+        <span class="s1">actionCol.setCellFactory(</span>
+                <span class="s1">param -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s0">private final </span><span class="s1">javafx.scene.control.Button blockBtn =</span>
+                                    <span class="s0">new </span><span class="s1">javafx.scene.control.Button();</span>
+
+                            <span class="s1">{</span>
+                                <span class="s1">blockBtn.getStyleClass().add(</span><span class="s4">&quot;button-icon&quot;</span><span class="s1">);</span>
+                                <span class="s1">blockBtn.setOnAction(</span>
+                                        <span class="s1">event -&gt; {</span>
+                                            <span class="s1">User user = getTableView().getItems().get(getIndex());</span>
+                                            <span class="s1">handleToggleBlock(user);</span>
+                                        <span class="s1">});</span>
+                            <span class="s1">}</span>
+
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(Void item, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(item, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty) {</span>
+                                    <span class="s1">setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                    <span class="s1">User user = getTableView().getItems().get(getIndex());</span>
+                                    <span class="s0">if </span><span class="s1">(user.isBlocked()) {</span>
+                                        <span class="s2">// Заблокований -&gt; дія &quot;Розблокувати&quot; (Відкритий замок,</span>
+                                        <span class="s2">// зелений)</span>
+                                        <span class="s1">blockBtn.setGraphic(</span>
+                                                <span class="s0">new </span><span class="s1">org.kordamp.ikonli.javafx.FontIcon(</span>
+                                                        <span class="s4">&quot;fas-lock-open&quot;</span><span class="s1">));</span>
+                                        <span class="s1">blockBtn.getStyleClass()</span>
+                                                <span class="s1">.setAll(</span><span class="s4">&quot;button-icon&quot;</span><span class="s1">, </span><span class="s4">&quot;flat&quot;</span><span class="s1">, </span><span class="s4">&quot;success&quot;</span><span class="s1">);</span>
+                                        <span class="s1">blockBtn.setTooltip(</span>
+                                                <span class="s0">new </span><span class="s1">javafx.scene.control.Tooltip(</span><span class="s4">&quot;Розблокувати&quot;</span><span class="s1">));</span>
+                                    <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                        <span class="s2">// Активний -&gt; дія &quot;Заблокувати&quot; (Закритий замок, червоний)</span>
+                                        <span class="s1">blockBtn.setGraphic(</span>
+                                                <span class="s0">new </span><span class="s1">org.kordamp.ikonli.javafx.FontIcon(</span><span class="s4">&quot;fas-lock&quot;</span><span class="s1">));</span>
+                                        <span class="s1">blockBtn.getStyleClass()</span>
+                                                <span class="s1">.setAll(</span><span class="s4">&quot;button-icon&quot;</span><span class="s1">, </span><span class="s4">&quot;flat&quot;</span><span class="s1">, </span><span class="s4">&quot;danger&quot;</span><span class="s1">);</span>
+                                        <span class="s1">blockBtn.setTooltip(</span>
+                                                <span class="s0">new </span><span class="s1">javafx.scene.control.Tooltip(</span><span class="s4">&quot;Заблокувати&quot;</span><span class="s1">));</span>
+                                    <span class="s1">}</span>
+                                    <span class="s1">setGraphic(blockBtn);</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">usersTable.getColumns().addAll(blockedCol, actionCol);</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">handleToggleBlock(User user) {</span>
+        <span class="s1">user.setBlocked(!user.isBlocked());</span>
+        <span class="s1">userRepo.update(user);</span>
+        <span class="s1">usersTable.refresh(); </span><span class="s2">// Миттєве оновлення UI (Вимога розділу 6)</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupRentalsTable() {</span>
+        <span class="s1">TableColumn&lt;RentalDTO, String&gt; userCol =</span>
+                <span class="s1">(TableColumn&lt;RentalDTO, String&gt;) rentalsTable.getColumns().get(</span><span class="s3">0</span><span class="s1">);</span>
+        <span class="s1">userCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getUserEmail()));</span>
+
+        <span class="s1">TableColumn&lt;RentalDTO, String&gt; startCol =</span>
+                <span class="s1">(TableColumn&lt;RentalDTO, String&gt;) rentalsTable.getColumns().get(</span><span class="s3">1</span><span class="s1">);</span>
+        <span class="s1">startCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getStartDate().toString()));</span>
+
+        <span class="s1">TableColumn&lt;RentalDTO, String&gt; endCol =</span>
+                <span class="s1">(TableColumn&lt;RentalDTO, String&gt;) rentalsTable.getColumns().get(</span><span class="s3">2</span><span class="s1">);</span>
+        <span class="s1">endCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getEndDate().toString()));</span>
+
+        <span class="s1">TableColumn&lt;RentalDTO, String&gt; statusCol =</span>
+                <span class="s1">(TableColumn&lt;RentalDTO, String&gt;) rentalsTable.getColumns().get(</span><span class="s3">3</span><span class="s1">);</span>
+        <span class="s1">statusCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getStatus()));</span>
+        <span class="s1">statusCol.setCellFactory(</span>
+                <span class="s1">column -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(String status, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(status, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty || status == </span><span class="s0">null</span><span class="s1">) {</span>
+                                    <span class="s1">setText(</span><span class="s0">null</span><span class="s1">);</span>
+                                    <span class="s1">setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                    <span class="s1">javafx.scene.control.Label badge =</span>
+                                            <span class="s0">new </span><span class="s1">javafx.scene.control.Label();</span>
+                                    <span class="s0">switch </span><span class="s1">(status) {</span>
+                                        <span class="s0">case </span><span class="s4">&quot;RESERVED&quot; </span><span class="s1">-&gt; {</span>
+                                            <span class="s1">badge.setText(</span><span class="s4">&quot;Заброньовано&quot;</span><span class="s1">);</span>
+                                            <span class="s1">badge.getStyleClass().addAll(</span><span class="s4">&quot;badge&quot;</span><span class="s1">, </span><span class="s4">&quot;accent&quot;</span><span class="s1">);</span>
+                                        <span class="s1">}</span>
+                                        <span class="s0">case </span><span class="s4">&quot;ISSUED&quot;</span><span class="s1">, </span><span class="s4">&quot;ACTIVE&quot; </span><span class="s1">-&gt; {</span>
+                                            <span class="s1">badge.setText(</span><span class="s4">&quot;Видано / Активна&quot;</span><span class="s1">);</span>
+                                            <span class="s1">badge.getStyleClass().addAll(</span><span class="s4">&quot;badge&quot;</span><span class="s1">, </span><span class="s4">&quot;warning&quot;</span><span class="s1">);</span>
+                                        <span class="s1">}</span>
+                                        <span class="s0">case </span><span class="s4">&quot;OVERDUE&quot; </span><span class="s1">-&gt; {</span>
+                                            <span class="s1">badge.setText(</span><span class="s4">&quot;Прострочено&quot;</span><span class="s1">);</span>
+                                            <span class="s1">badge.getStyleClass().addAll(</span><span class="s4">&quot;badge&quot;</span><span class="s1">, </span><span class="s4">&quot;danger&quot;</span><span class="s1">);</span>
+                                        <span class="s1">}</span>
+                                        <span class="s0">case </span><span class="s4">&quot;RETURNED&quot;</span><span class="s1">, </span><span class="s4">&quot;COMPLETED&quot; </span><span class="s1">-&gt; {</span>
+                                            <span class="s1">badge.setText(</span><span class="s4">&quot;Повернуто / Завершена&quot;</span><span class="s1">);</span>
+                                            <span class="s1">badge.getStyleClass().addAll(</span><span class="s4">&quot;badge&quot;</span><span class="s1">, </span><span class="s4">&quot;success&quot;</span><span class="s1">);</span>
+                                        <span class="s1">}</span>
+                                        <span class="s0">default </span><span class="s1">-&gt; {</span>
+                                            <span class="s1">badge.setText(status);</span>
+                                            <span class="s1">badge.getStyleClass().add(</span><span class="s4">&quot;badge&quot;</span><span class="s1">);</span>
+                                        <span class="s1">}</span>
+                                    <span class="s1">}</span>
+                                    <span class="s1">setGraphic(badge);</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">TableColumn&lt;RentalDTO, String&gt; totalCol =</span>
+                <span class="s1">(TableColumn&lt;RentalDTO, String&gt;) rentalsTable.getColumns().get(</span><span class="s3">4</span><span class="s1">);</span>
+        <span class="s1">totalCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt;</span>
+                        <span class="s0">new </span><span class="s1">SimpleStringProperty(</span>
+                                <span class="s1">String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, data.getValue().getTotalPrice())));</span>
+
+        <span class="s1">TableColumn&lt;RentalDTO, String&gt; penaltyCol = </span><span class="s0">new </span><span class="s1">TableColumn&lt;&gt;(</span><span class="s4">&quot;Штраф&quot;</span><span class="s1">);</span>
+        <span class="s1">penaltyCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt;</span>
+                        <span class="s0">new </span><span class="s1">SimpleStringProperty(</span>
+                                <span class="s1">String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, data.getValue().getPenaltyAmount())));</span>
+        <span class="s1">penaltyCol.setPrefWidth(</span><span class="s3">100</span><span class="s1">);</span>
+
+        <span class="s2">// Додавання ComboBox для зміни статусу (Блок 2: Машина станів)</span>
+        <span class="s1">TableColumn&lt;RentalDTO, Void&gt; actionCol = </span><span class="s0">new </span><span class="s1">TableColumn&lt;&gt;(</span><span class="s4">&quot;Дії&quot;</span><span class="s1">);</span>
+        <span class="s1">actionCol.setPrefWidth(</span><span class="s3">220</span><span class="s1">);</span>
+        <span class="s1">actionCol.setCellFactory(</span>
+                <span class="s1">param -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s0">private final </span><span class="s1">ComboBox&lt;String&gt; statusCombo = </span><span class="s0">new </span><span class="s1">ComboBox&lt;&gt;();</span>
+
+                            <span class="s1">{</span>
+                                <span class="s1">statusCombo.getItems().addAll(</span><span class="s4">&quot;RESERVED&quot;</span><span class="s1">, </span><span class="s4">&quot;ISSUED&quot;</span><span class="s1">, </span><span class="s4">&quot;RETURNED&quot;</span><span class="s1">);</span>
+                                <span class="s1">statusCombo.getStyleClass().add(</span><span class="s4">&quot;small&quot;</span><span class="s1">);</span>
+
+                                <span class="s2">// UX баг 3: StringConverter для локалізації статусів (Вимога UX)</span>
+                                <span class="s1">statusCombo.setConverter(</span>
+                                        <span class="s0">new </span><span class="s1">javafx.util.StringConverter&lt;&gt;() {</span>
+                                            <span class="s1">@Override</span>
+                                            <span class="s0">public </span><span class="s1">String toString(String status) {</span>
+                                                <span class="s0">if </span><span class="s1">(status == </span><span class="s0">null</span><span class="s1">) </span><span class="s0">return </span><span class="s4">&quot;&quot;</span><span class="s1">;</span>
+                                                <span class="s0">return switch </span><span class="s1">(status) {</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;RESERVED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Заброньовано&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;ISSUED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Видано&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;RETURNED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Повернуто&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;ACTIVE&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Активна&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;COMPLETED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Завершена&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;OVERDUE&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Прострочено&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">default </span><span class="s1">-&gt; status;</span>
+                                                <span class="s1">};</span>
+                                            <span class="s1">}</span>
+
+                                            <span class="s1">@Override</span>
+                                            <span class="s0">public </span><span class="s1">String fromString(String string) {</span>
+                                                <span class="s0">if </span><span class="s1">(string == </span><span class="s0">null</span><span class="s1">) </span><span class="s0">return null</span><span class="s1">;</span>
+                                                <span class="s0">return switch </span><span class="s1">(string) {</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;Заброньовано&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;RESERVED&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;Видано&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;ISSUED&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;Повернуто&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;RETURNED&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;Активна&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;ACTIVE&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;Завершена&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;COMPLETED&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">case </span><span class="s4">&quot;Прострочено&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;OVERDUE&quot;</span><span class="s1">;</span>
+                                                    <span class="s0">default </span><span class="s1">-&gt; string;</span>
+                                                <span class="s1">};</span>
+                                            <span class="s1">}</span>
+                                        <span class="s1">});</span>
+
+                                <span class="s1">statusCombo.setOnAction(</span>
+                                        <span class="s1">event -&gt; {</span>
+                                            <span class="s1">RentalDTO rental =</span>
+                                                    <span class="s1">getTableView().getItems().get(getIndex());</span>
+                                            <span class="s1">String newValue = statusCombo.getValue();</span>
+                                            <span class="s0">if </span><span class="s1">(newValue != </span><span class="s0">null</span>
+                                                    <span class="s1">&amp;&amp; !newValue.equals(rental.getStatus())) {</span>
+                                                <span class="s1">handleStatusChange(rental, newValue);</span>
+                                            <span class="s1">}</span>
+                                        <span class="s1">});</span>
+                            <span class="s1">}</span>
+
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(Void item, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(item, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty) {</span>
+                                    <span class="s1">setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                    <span class="s1">RentalDTO rental = getTableView().getItems().get(getIndex());</span>
+                                    <span class="s1">statusCombo.setValue(rental.getStatus());</span>
+                                    <span class="s1">setGraphic(statusCombo);</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+        <span class="s1">rentalsTable.getColumns().addAll(penaltyCol, actionCol);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onExportRentalsClicked() {</span>
+        <span class="s1">javafx.stage.FileChooser fileChooser = </span><span class="s0">new </span><span class="s1">javafx.stage.FileChooser();</span>
+        <span class="s1">fileChooser.setTitle(</span><span class="s4">&quot;Зберегти звіт&quot;</span><span class="s1">);</span>
+        <span class="s1">fileChooser</span>
+                <span class="s1">.getExtensionFilters()</span>
+                <span class="s1">.add(</span><span class="s0">new </span><span class="s1">javafx.stage.FileChooser.ExtensionFilter(</span><span class="s4">&quot;CSV файли&quot;</span><span class="s1">, </span><span class="s4">&quot;*.csv&quot;</span><span class="s1">));</span>
+        <span class="s1">fileChooser.setInitialFileName(</span><span class="s4">&quot;rentals_report_&quot; </span><span class="s1">+ java.time.LocalDate.now() + </span><span class="s4">&quot;.csv&quot;</span><span class="s1">);</span>
+
+        <span class="s1">java.io.File file = fileChooser.showSaveDialog(rentalsTable.getScene().getWindow());</span>
+        <span class="s0">if </span><span class="s1">(file != </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s1">reportService.exportRentalsToCsv(rentalsTable.getItems(), file);</span>
+                <span class="s1">javafx.scene.control.Alert alert =</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.Alert(</span>
+                                <span class="s1">javafx.scene.control.Alert.AlertType.INFORMATION);</span>
+                <span class="s1">alert.setTitle(</span><span class="s4">&quot;Успіх&quot;</span><span class="s1">);</span>
+                <span class="s1">alert.setHeaderText(</span><span class="s0">null</span><span class="s1">);</span>
+                <span class="s1">alert.setContentText(</span><span class="s4">&quot;Звіт успішно експортовано у &quot; </span><span class="s1">+ file.getName());</span>
+                <span class="s1">alert.showAndWait();</span>
+            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(java.io.IOException e) {</span>
+                <span class="s1">e.printStackTrace();</span>
+                <span class="s1">javafx.scene.control.Alert alert =</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);</span>
+                <span class="s1">alert.setTitle(</span><span class="s4">&quot;Помилка&quot;</span><span class="s1">);</span>
+                <span class="s1">alert.setHeaderText(</span><span class="s4">&quot;Не вдалося зберегти файл&quot;</span><span class="s1">);</span>
+                <span class="s1">alert.setContentText(e.getMessage());</span>
+                <span class="s1">alert.showAndWait();</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">handleStatusChange(RentalDTO rentalDto, String newStatus) {</span>
+        <span class="s1">rentalFacade.updateStatus(rentalDto.getId(), newStatus);</span>
+        <span class="s1">loadDataAsync();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">updateCharts(List&lt;RentalDTO&gt; rentals) {</span>
+        <span class="s2">// Статистика за статусами (Блок 3: Дашборд)</span>
+        <span class="s1">java.util.Map&lt;String, Long&gt; statusCounts =</span>
+                <span class="s1">rentals.stream()</span>
+                        <span class="s1">.collect(</span>
+                                <span class="s1">java.util.stream.Collectors.groupingBy(</span>
+                                        <span class="s1">RentalDTO::getStatus,</span>
+                                        <span class="s1">java.util.stream.Collectors.counting()));</span>
+
+        <span class="s1">statusChart.getData().clear();</span>
+        <span class="s2">// Візуальний баг 3: Стабільний розмір (Вимога UX)</span>
+        <span class="s1">statusChart.setLabelsVisible(</span><span class="s0">false</span><span class="s1">);</span>
+        <span class="s1">statusChart.setLegendVisible(</span><span class="s0">true</span><span class="s1">);</span>
+
+        <span class="s1">statusCounts.forEach(</span>
+                <span class="s1">(status, count) -&gt; {</span>
+                    <span class="s2">// UX баг 2: Локалізація в графіках (Вимога UX)</span>
+                    <span class="s1">String localizedStatus =</span>
+                            <span class="s0">switch </span><span class="s1">(status) {</span>
+                                <span class="s0">case </span><span class="s4">&quot;RESERVED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Заброньовано&quot;</span><span class="s1">;</span>
+                                <span class="s0">case </span><span class="s4">&quot;ISSUED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Видано&quot;</span><span class="s1">;</span>
+                                <span class="s0">case </span><span class="s4">&quot;RETURNED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Повернуто&quot;</span><span class="s1">;</span>
+                                <span class="s0">case </span><span class="s4">&quot;COMPLETED&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Завершена&quot;</span><span class="s1">;</span>
+                                <span class="s0">case </span><span class="s4">&quot;ACTIVE&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Активна&quot;</span><span class="s1">;</span>
+                                <span class="s0">case </span><span class="s4">&quot;OVERDUE&quot; </span><span class="s1">-&gt; </span><span class="s4">&quot;Прострочено&quot;</span><span class="s1">;</span>
+                                <span class="s0">default </span><span class="s1">-&gt; status;</span>
+                            <span class="s1">};</span>
+                    <span class="s1">statusChart</span>
+                            <span class="s1">.getData()</span>
+                            <span class="s1">.add(</span><span class="s0">new </span><span class="s1">javafx.scene.chart.PieChart.Data(localizedStatus, count));</span>
+                <span class="s1">});</span>
+
+        <span class="s2">// Популярність костюмів (Топ-5)</span>
+        <span class="s1">java.util.Map&lt;String, Long&gt; costumePopularity =</span>
+                <span class="s1">rentals.stream()</span>
+                        <span class="s1">.flatMap(r -&gt; r.getCostumeNames().stream())</span>
+                        <span class="s1">.collect(</span>
+                                <span class="s1">java.util.stream.Collectors.groupingBy(</span>
+                                        <span class="s1">s -&gt; s, java.util.stream.Collectors.counting()));</span>
+
+        <span class="s1">popularityChart.getData().clear();</span>
+        <span class="s2">// Візуальний баг 1: Налізання тексту та баг кешування (Вимога UX)</span>
+        <span class="s1">javafx.scene.chart.CategoryAxis xAxis =</span>
+                <span class="s1">(javafx.scene.chart.CategoryAxis) popularityChart.getXAxis();</span>
+        <span class="s1">xAxis.getCategories().clear(); </span><span class="s2">// Очищення кешу</span>
+        <span class="s1">xAxis.setAnimated(</span><span class="s0">false</span><span class="s1">); </span><span class="s2">// Вимикаємо анімацію лише для осі X</span>
+        <span class="s1">xAxis.setTickLabelRotation(-</span><span class="s3">45</span><span class="s1">);</span>
+        <span class="s1">popularityChart.setAnimated(</span><span class="s0">true</span><span class="s1">); </span><span class="s2">// Залишаємо загальну анімацію для стовпців</span>
+
+        <span class="s1">javafx.scene.chart.XYChart.Series&lt;String, Number&gt; series =</span>
+                <span class="s0">new </span><span class="s1">javafx.scene.chart.XYChart.Series&lt;&gt;();</span>
+        <span class="s1">series.setName(</span><span class="s4">&quot;Оренди&quot;</span><span class="s1">);</span>
+        <span class="s1">costumePopularity.entrySet().stream()</span>
+                <span class="s1">.sorted(java.util.Map.Entry.&lt;String, Long&gt;comparingByValue().reversed())</span>
+                <span class="s1">.limit(</span><span class="s3">5</span><span class="s1">)</span>
+                <span class="s1">.forEach(</span>
+                        <span class="s1">entry -&gt; {</span>
+                            <span class="s2">// Візуальний баг 1: Обрізання довгих назв (Вимога UX)</span>
+                            <span class="s1">String name = entry.getKey();</span>
+                            <span class="s1">String displayName =</span>
+                                    <span class="s1">name.length() &gt; </span><span class="s3">12 </span><span class="s1">? name.substring(</span><span class="s3">0</span><span class="s1">, </span><span class="s3">12</span><span class="s1">) + </span><span class="s4">&quot;..&quot; </span><span class="s1">: name;</span>
+                            <span class="s1">series.getData()</span>
+                                    <span class="s1">.add(</span>
+                                            <span class="s0">new </span><span class="s1">javafx.scene.chart.XYChart.Data&lt;&gt;(</span>
+                                                    <span class="s1">displayName, entry.getValue()));</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">popularityChart.getData().add(series);</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">loadDataAsync() {</span>
+        <span class="s2">// Асинхронне завантаження (Вимога розділу 4.4.5)</span>
+        <span class="s1">Task&lt;Void&gt; loadTask =</span>
+                <span class="s0">new </span><span class="s1">Task&lt;&gt;() {</span>
+                    <span class="s1">@Override</span>
+                    <span class="s0">protected </span><span class="s1">Void call() </span><span class="s0">throws </span><span class="s1">Exception {</span>
+                        <span class="s1">List&lt;Costume&gt; costumes = costumeRepo.findAll();</span>
+                        <span class="s1">List&lt;User&gt; users = userRepo.findAll();</span>
+                        <span class="s1">List&lt;RentalDTO&gt; rentals = rentalFacade.getAllRentals();</span>
+
+                        <span class="s2">// Оновлення UI в основному потоці</span>
+                        <span class="s1">javafx.application.Platform.runLater(</span>
+                                <span class="s1">() -&gt; {</span>
+                                    <span class="s1">costumesData.setAll(costumes);</span>
+                                    <span class="s1">usersTable.setItems(FXCollections.observableArrayList(users));</span>
+                                    <span class="s1">rentalsTable.setItems(</span>
+                                            <span class="s1">FXCollections.observableArrayList(rentals));</span>
+                                    <span class="s2">// Наповнення графіків дашборду (Блок 3: Дашборд)</span>
+                                    <span class="s1">updateCharts(rentals);</span>
+                                <span class="s1">});</span>
+                        <span class="s0">return null</span><span class="s1">;</span>
+                    <span class="s1">}</span>
+                <span class="s1">};</span>
+        <span class="s0">new </span><span class="s1">Thread(loadTask).start();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupSearch() {</span>
+        <span class="s2">// Реалізація пошуку (Вимога розділу 5.2)</span>
+        <span class="s1">FilteredList&lt;Costume&gt; filteredData = </span><span class="s0">new </span><span class="s1">FilteredList&lt;&gt;(costumesData, p -&gt; </span><span class="s0">true</span><span class="s1">);</span>
+        <span class="s1">costumeSearchField</span>
+                <span class="s1">.textProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(observable, oldValue, newValue) -&gt; {</span>
+                            <span class="s1">filteredData.setPredicate(</span>
+                                    <span class="s1">costume -&gt; {</span>
+                                        <span class="s0">if </span><span class="s1">(newValue == </span><span class="s0">null </span><span class="s1">|| newValue.isEmpty()) </span><span class="s0">return true</span><span class="s1">;</span>
+                                        <span class="s1">String lowerCaseFilter = newValue.toLowerCase();</span>
+                                        <span class="s0">return </span><span class="s1">costume.getName()</span>
+                                                <span class="s1">.toLowerCase()</span>
+                                                <span class="s1">.contains(lowerCaseFilter);</span>
+                                    <span class="s1">});</span>
+                        <span class="s1">});</span>
+        <span class="s1">costumesTable.setItems(filteredData);</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

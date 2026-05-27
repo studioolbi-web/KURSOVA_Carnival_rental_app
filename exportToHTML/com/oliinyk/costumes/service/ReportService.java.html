@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>ReportService.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #0037a6;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ReportService.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.dto.RentalDTO;</span>
+<span class="s0">import </span><span class="s1">java.io.FileWriter;</span>
+<span class="s0">import </span><span class="s1">java.io.IOException;</span>
+<span class="s0">import </span><span class="s1">java.nio.charset.StandardCharsets;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+
+<span class="s2">/** Сервіс для генерації звітів (Вимога розділу 5.4). */</span>
+<span class="s0">public class </span><span class="s1">ReportService {</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Експортує список оренд у CSV файл.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentals Список об'єктів RentalDTO для експорту</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">file Файл, у який буде здійснено запис</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">IOException при помилках запису у файл</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">exportRentalsToCsv(List&lt;RentalDTO&gt; rentals, java.io.File file) </span><span class="s0">throws </span><span class="s1">IOException {</span>
+        <span class="s0">try </span><span class="s1">(FileWriter writer = </span><span class="s0">new </span><span class="s1">FileWriter(file, StandardCharsets.UTF_8)) {</span>
+            <span class="s2">// Додавання BOM для коректного відображення UTF-8 в Excel</span>
+            <span class="s1">writer.write(</span><span class="s4">'</span><span class="s5">\ufeff</span><span class="s4">'</span><span class="s1">);</span>
+
+            <span class="s2">// Заголовок</span>
+            <span class="s1">writer.write(</span>
+                    <span class="s4">&quot;ID,Користувач,Дата Початку,Дата Кінця,Статус,Загальна Ціна,Застава,Штраф,Костюми</span><span class="s5">\n</span><span class="s4">&quot;</span><span class="s1">);</span>
+
+            <span class="s0">for </span><span class="s1">(RentalDTO rental : rentals) {</span>
+                <span class="s1">writer.write(</span>
+                        <span class="s1">String.format(</span>
+                                <span class="s4">&quot;%s,%s,%s,%s,%s,</span><span class="s5">\&quot;</span><span class="s4">%.2f</span><span class="s5">\&quot;</span><span class="s4">,</span><span class="s5">\&quot;</span><span class="s4">%.2f</span><span class="s5">\&quot;</span><span class="s4">,</span><span class="s5">\&quot;</span><span class="s4">%.2f</span><span class="s5">\&quot;</span><span class="s4">,</span><span class="s5">\&quot;</span><span class="s4">%s</span><span class="s5">\&quot;\n</span><span class="s4">&quot;</span><span class="s1">,</span>
+                                <span class="s1">rental.getId(),</span>
+                                <span class="s1">rental.getUserEmail(),</span>
+                                <span class="s1">rental.getStartDate(),</span>
+                                <span class="s1">rental.getEndDate(),</span>
+                                <span class="s1">rental.getStatus(),</span>
+                                <span class="s1">rental.getTotalPrice(),</span>
+                                <span class="s1">rental.getTotalDeposit(),</span>
+                                <span class="s1">rental.getPenaltyAmount(),</span>
+                                <span class="s1">String.join(</span><span class="s4">&quot;; &quot;</span><span class="s1">, rental.getCostumeNames())));</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

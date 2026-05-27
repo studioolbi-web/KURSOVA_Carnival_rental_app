@@ -1,0 +1,77 @@
+<html>
+<head>
+<title>V1__Create_Initial_Schema.sql</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+.s3 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+V1__Create_Initial_Schema.sql</font>
+</center></td></tr></table>
+<pre><span class="s0">-- Таблиця users</span>
+<span class="s0">-- Класифікація: Головна сутність (Entity)</span>
+<span class="s0">-- Нормальна форма: 3НФ</span>
+<span class="s2">CREATE TABLE </span><span class="s1">users (</span>
+    <span class="s1">id UUID </span><span class="s2">PRIMARY KEY</span><span class="s1">,</span>
+    <span class="s1">email </span><span class="s2">VARCHAR</span><span class="s1">(</span><span class="s3">255</span><span class="s1">) </span><span class="s2">NOT NULL UNIQUE</span><span class="s1">,</span>
+    <span class="s1">password_hash </span><span class="s2">VARCHAR</span><span class="s1">(</span><span class="s3">255</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s2">role VARCHAR</span><span class="s1">(</span><span class="s3">50</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s1">is_verified BOOLEAN </span><span class="s2">NOT NULL DEFAULT FALSE</span><span class="s1">,</span>
+    <span class="s1">created_at </span><span class="s2">TIMESTAMP DEFAULT CURRENT_TIMESTAMP</span>
+<span class="s1">);</span>
+
+<span class="s0">-- Таблиця categories</span>
+<span class="s0">-- Класифікація: Довідник (Dictionary)</span>
+<span class="s0">-- Нормальна форма: 3НФ</span>
+<span class="s2">CREATE TABLE </span><span class="s1">categories (</span>
+    <span class="s1">id UUID </span><span class="s2">PRIMARY KEY</span><span class="s1">,</span>
+    <span class="s2">name VARCHAR</span><span class="s1">(</span><span class="s3">255</span><span class="s1">) </span><span class="s2">NOT NULL UNIQUE</span><span class="s1">,</span>
+    <span class="s1">description TEXT</span>
+<span class="s1">);</span>
+
+<span class="s0">-- Таблиця costumes</span>
+<span class="s0">-- Класифікація: Головна сутність (Entity)</span>
+<span class="s0">-- Нормальна форма: 3НФ</span>
+<span class="s2">CREATE TABLE </span><span class="s1">costumes (</span>
+    <span class="s1">id UUID </span><span class="s2">PRIMARY KEY</span><span class="s1">,</span>
+    <span class="s1">category_id UUID </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s2">name VARCHAR</span><span class="s1">(</span><span class="s3">255</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s1">description TEXT,</span>
+    <span class="s1">price_per_day </span><span class="s2">DECIMAL</span><span class="s1">(</span><span class="s3">10</span><span class="s1">, </span><span class="s3">2</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s2">FOREIGN KEY </span><span class="s1">(category_id) </span><span class="s2">REFERENCES </span><span class="s1">categories(id) </span><span class="s2">ON DELETE RESTRICT</span>
+<span class="s1">);</span>
+
+<span class="s0">-- Таблиця rentals</span>
+<span class="s0">-- Класифікація: Транзакційна таблиця (Transaction)</span>
+<span class="s0">-- Нормальна форма: 3НФ</span>
+<span class="s2">CREATE TABLE </span><span class="s1">rentals (</span>
+    <span class="s1">id UUID </span><span class="s2">PRIMARY KEY</span><span class="s1">,</span>
+    <span class="s1">user_id UUID </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s1">start_date </span><span class="s2">DATE NOT NULL</span><span class="s1">,</span>
+    <span class="s1">end_date </span><span class="s2">DATE NOT NULL</span><span class="s1">,</span>
+    <span class="s1">total_price </span><span class="s2">DECIMAL</span><span class="s1">(</span><span class="s3">10</span><span class="s1">, </span><span class="s3">2</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s1">status </span><span class="s2">VARCHAR</span><span class="s1">(</span><span class="s3">50</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s2">FOREIGN KEY </span><span class="s1">(user_id) </span><span class="s2">REFERENCES </span><span class="s1">users(id) </span><span class="s2">ON DELETE RESTRICT</span>
+<span class="s1">);</span>
+
+<span class="s0">-- Таблиця rental_items</span>
+<span class="s0">-- Класифікація: Таблиця зв'язку (Join Table / Transaction Details)</span>
+<span class="s0">-- Нормальна форма: 3НФ</span>
+<span class="s2">CREATE TABLE </span><span class="s1">rental_items (</span>
+    <span class="s1">rental_id UUID </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s1">costume_id UUID </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s1">price_at_rental </span><span class="s2">DECIMAL</span><span class="s1">(</span><span class="s3">10</span><span class="s1">, </span><span class="s3">2</span><span class="s1">) </span><span class="s2">NOT NULL</span><span class="s1">,</span>
+    <span class="s2">PRIMARY KEY </span><span class="s1">(rental_id, costume_id),</span>
+    <span class="s2">FOREIGN KEY </span><span class="s1">(rental_id) </span><span class="s2">REFERENCES </span><span class="s1">rentals(id) </span><span class="s2">ON DELETE CASCADE</span><span class="s1">,</span>
+    <span class="s2">FOREIGN KEY </span><span class="s1">(costume_id) </span><span class="s2">REFERENCES </span><span class="s1">costumes(id) </span><span class="s2">ON DELETE RESTRICT</span>
+<span class="s1">);</span>
+</pre>
+</body>
+</html>

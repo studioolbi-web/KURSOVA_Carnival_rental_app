@@ -1,0 +1,42 @@
+<html>
+<head>
+<title>MyRentalsView.fxml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #080808; font-style: italic;}
+.s1 { color: #174ad4;}
+.s2 { color: #080808;}
+.s3 { color: #067d17;}
+.s4 { color: #0033b3;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MyRentalsView.fxml</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;?</span><span class="s1">xml version</span><span class="s3">=&quot;1.0&quot; </span><span class="s1">encoding</span><span class="s3">=&quot;UTF-8&quot;</span><span class="s0">?&gt;</span>
+
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.control.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.layout.*</span><span class="s0">?&gt;</span>
+
+<span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;20.0&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 30; -fx-background-color: -color-bg-default;&quot; </span><span class="s1">xmlns</span><span class="s3">=&quot;http://javafx.com/javafx/22&quot; </span><span class="s1">xmlns:fx</span><span class="s3">=&quot;http://javafx.com/fxml/1&quot; </span><span class="s1">fx:controller</span><span class="s3">=&quot;com.oliinyk.costumes.view.MyRentalsController&quot;</span><span class="s2">&gt;</span>
+    <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;&quot; </span><span class="s1">text</span><span class="s3">=&quot;Мої Оренди&quot; </span><span class="s2">/&gt;</span>
+    
+    <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:id</span><span class="s3">=&quot;rentalsTable&quot; </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot;</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:constant</span><span class="s3">=&quot;CONSTRAINED_RESIZE_POLICY&quot; </span><span class="s2">/&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">columns</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">fx:id</span><span class="s3">=&quot;costumesCol&quot; </span><span class="s1">text</span><span class="s3">=&quot;Костюми&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;350&quot; </span><span class="s2">/&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">fx:id</span><span class="s3">=&quot;startCol&quot; </span><span class="s1">text</span><span class="s3">=&quot;Дата Початку&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s2">/&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">fx:id</span><span class="s3">=&quot;endCol&quot; </span><span class="s1">text</span><span class="s3">=&quot;Дата Кінця&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s2">/&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">fx:id</span><span class="s3">=&quot;statusCol&quot; </span><span class="s1">text</span><span class="s3">=&quot;Статус&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s2">/&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">fx:id</span><span class="s3">=&quot;totalCol&quot; </span><span class="s1">text</span><span class="s3">=&quot;Сума&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;120&quot; </span><span class="s2">/&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">columns</span><span class="s2">&gt;</span>
+    <span class="s2">&lt;/</span><span class="s4">TableView</span><span class="s2">&gt;</span>
+<span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+</pre>
+</body>
+</html>

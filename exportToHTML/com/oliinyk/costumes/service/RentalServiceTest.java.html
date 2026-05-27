@@ -1,0 +1,85 @@
+<html>
+<head>
+<title>RentalServiceTest.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #067d17;}
+.s3 { color: #1750eb;}
+.s4 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RentalServiceTest.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import static </span><span class="s1">org.junit.jupiter.api.Assertions.*;</span>
+<span class="s0">import static </span><span class="s1">org.mockito.Mockito.*;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Rental;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.RentalItemRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.RentalRepository;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.BeforeEach;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.Test;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.extension.ExtendWith;</span>
+<span class="s0">import </span><span class="s1">org.mockito.Mock;</span>
+<span class="s0">import </span><span class="s1">org.mockito.junit.jupiter.MockitoExtension;</span>
+
+<span class="s1">@ExtendWith(MockitoExtension.</span><span class="s0">class</span><span class="s1">)</span>
+<span class="s0">public class </span><span class="s1">RentalServiceTest {</span>
+
+    <span class="s1">@Mock </span><span class="s0">private </span><span class="s1">RentalRepository rentalRepository;</span>
+
+    <span class="s1">@Mock </span><span class="s0">private </span><span class="s1">RentalItemRepository rentalItemRepository;</span>
+
+    <span class="s0">private </span><span class="s1">RentalService rentalService;</span>
+    <span class="s0">private </span><span class="s1">Costume testCostume;</span>
+
+    <span class="s1">@BeforeEach</span>
+    <span class="s0">void </span><span class="s1">setUp() {</span>
+        <span class="s1">rentalService = </span><span class="s0">new </span><span class="s1">RentalService(rentalRepository, rentalItemRepository);</span>
+        <span class="s1">testCostume =</span>
+                <span class="s1">Costume.builder()</span>
+                        <span class="s1">.id(UUID.randomUUID())</span>
+                        <span class="s1">.name(</span><span class="s2">&quot;Тестовий костюм&quot;</span><span class="s1">)</span>
+                        <span class="s1">.pricePerDay(</span><span class="s0">new </span><span class="s1">BigDecimal(</span><span class="s2">&quot;100.00&quot;</span><span class="s1">))</span>
+                        <span class="s1">.depositAmount(</span><span class="s0">new </span><span class="s1">BigDecimal(</span><span class="s2">&quot;200.00&quot;</span><span class="s1">))</span>
+                        <span class="s1">.build();</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">calculatePenalty_ShouldReturnZero_WhenNotOverdue() {</span>
+        <span class="s1">Rental rental =</span>
+                <span class="s1">Rental.builder().endDate(LocalDate.now().plusDays(</span><span class="s3">1</span><span class="s1">)).status(</span><span class="s2">&quot;ACTIVE&quot;</span><span class="s1">).build();</span>
+        <span class="s1">List&lt;Costume&gt; costumes = List.of(testCostume);</span>
+
+        <span class="s1">BigDecimal penalty = rentalService.calculatePenalty(rental, costumes);</span>
+
+        <span class="s1">assertEquals(</span><span class="s3">0</span><span class="s1">, penalty.compareTo(BigDecimal.ZERO));</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">calculatePenalty_ShouldReturnCorrectAmount_WhenOverdue() {</span>
+        <span class="s1">Rental rental =</span>
+                <span class="s1">Rental.builder().endDate(LocalDate.now().minusDays(</span><span class="s3">2</span><span class="s1">)).status(</span><span class="s2">&quot;ACTIVE&quot;</span><span class="s1">).build();</span>
+        <span class="s4">// 2 дні прострочки * 100.00 грн/день = 200.00 грн</span>
+        <span class="s1">List&lt;Costume&gt; costumes = List.of(testCostume);</span>
+
+        <span class="s1">BigDecimal penalty = rentalService.calculatePenalty(rental, costumes);</span>
+
+        <span class="s1">assertEquals(</span><span class="s3">0</span><span class="s1">, </span><span class="s0">new </span><span class="s1">BigDecimal(</span><span class="s2">&quot;200.00&quot;</span><span class="s1">).compareTo(penalty));</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

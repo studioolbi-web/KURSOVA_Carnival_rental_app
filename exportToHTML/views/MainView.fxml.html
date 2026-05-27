@@ -1,0 +1,85 @@
+<html>
+<head>
+<title>MainView.fxml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #080808; font-style: italic;}
+.s1 { color: #174ad4;}
+.s2 { color: #080808;}
+.s3 { color: #067d17;}
+.s4 { color: #0033b3;}
+.s5 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MainView.fxml</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;?</span><span class="s1">xml version</span><span class="s3">=&quot;1.0&quot; </span><span class="s1">encoding</span><span class="s3">=&quot;UTF-8&quot;</span><span class="s0">?&gt;</span>
+
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.control.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.layout.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">org.kordamp.ikonli.javafx.FontIcon</span><span class="s0">?&gt;</span>
+
+<span class="s2">&lt;</span><span class="s4">BorderPane </span><span class="s1">prefHeight</span><span class="s3">=&quot;650.0&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;1000.0&quot; </span><span class="s1">xmlns</span><span class="s3">=&quot;http://javafx.com/javafx/22&quot; </span><span class="s1">xmlns:fx</span><span class="s3">=&quot;http://javafx.com/fxml/1&quot; </span><span class="s1">fx:controller</span><span class="s3">=&quot;com.oliinyk.costumes.view.MainController&quot;</span><span class="s2">&gt;</span>
+    <span class="s5">&lt;!-- Sidebar --&gt;</span>
+    <span class="s2">&lt;</span><span class="s4">left</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-background-color: -color-bg-inset; -fx-padding: 25; -fx-border-color: transparent -color-border-default transparent transparent; -fx-border-width: 1;&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;280.0&quot; </span><span class="s1">minWidth</span><span class="s3">=&quot;280.0&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;280.0&quot;</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">text</span><span class="s3">=&quot;Carnival&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-accent-emphasis;&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-mask&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;32&quot; </span><span class="s1">iconColor</span><span class="s3">=&quot;#005fb8&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">VBox.margin</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">javafx.geometry.Insets </span><span class="s1">bottom</span><span class="s3">=&quot;20&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">VBox.margin</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Label</span><span class="s2">&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">Separator </span><span class="s2">/&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;btnCatalog&quot; </span><span class="s1">text</span><span class="s3">=&quot;Каталог&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;Infinity&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;BASELINE_LEFT&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#showCatalog&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;flat&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-list&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;16&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">VBox.margin</span><span class="s2">&gt;&lt;</span><span class="s4">javafx.geometry.Insets </span><span class="s1">top</span><span class="s3">=&quot;10&quot;</span><span class="s2">/&gt;&lt;/</span><span class="s4">VBox.margin</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;btnBasket&quot; </span><span class="s1">text</span><span class="s3">=&quot;Кошик&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;Infinity&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;BASELINE_LEFT&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#showBasket&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;flat&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-shopping-cart&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;16&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;btnMyRentals&quot; </span><span class="s1">text</span><span class="s3">=&quot;Мої Оренди&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;Infinity&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;BASELINE_LEFT&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#showMyRentals&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;flat&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-history&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;16&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;btnAdmin&quot; </span><span class="s1">text</span><span class="s3">=&quot;Адмін Панель&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;Infinity&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;BASELINE_LEFT&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#showAdminPanel&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;flat&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-user-shield&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;16&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;btnSettings&quot; </span><span class="s1">text</span><span class="s3">=&quot;Налаштування&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;Infinity&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;BASELINE_LEFT&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#showSettings&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;flat&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-cog&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;16&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">Region </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot; </span><span class="s2">/&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">text</span><span class="s3">=&quot;Вийти&quot; </span><span class="s1">maxWidth</span><span class="s3">=&quot;Infinity&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;BASELINE_LEFT&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#logout&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;danger&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-sign-out-alt&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;16&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+    <span class="s2">&lt;/</span><span class="s4">left</span><span class="s2">&gt;</span>
+    
+    <span class="s5">&lt;!-- Content Area --&gt;</span>
+    <span class="s2">&lt;</span><span class="s4">center</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">StackPane </span><span class="s1">fx:id</span><span class="s3">=&quot;contentArea&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-background-color: -color-bg-default;&quot; </span><span class="s2">/&gt;</span>
+    <span class="s2">&lt;/</span><span class="s4">center</span><span class="s2">&gt;</span>
+<span class="s2">&lt;/</span><span class="s4">BorderPane</span><span class="s2">&gt;</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="15" style="-fx-padding: 20; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.CostumeDialogController">
+    <GridPane hgap="10" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints minWidth="100" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+        
+        <Label text="Назва:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+        <TextField fx:id="nameField" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        
+        <Label text="Опис:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+        <TextArea fx:id="descriptionArea" prefRowCount="3" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        
+        <Label text="Ціна (грн/день):" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+        <TextField fx:id="priceField" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        
+        <Label text="Застава (грн):" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+        <TextField fx:id="depositField" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        
+        <Label text="Категорія:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+        <ComboBox fx:id="categoryComboBox" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+        
+        <Label text="Шлях до фото:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+        <TextField fx:id="imagePathField" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+    </GridPane>
+    
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Скасувати" onAction="#onCancelClicked" />
+        <Button text="Зберегти" styleClass="accent" onAction="#onSaveClicked" />
+    </HBox>
+</VBox>

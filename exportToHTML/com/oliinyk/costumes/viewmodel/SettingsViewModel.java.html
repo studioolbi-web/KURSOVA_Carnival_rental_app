@@ -1,0 +1,77 @@
+<html>
+<head>
+<title>SettingsViewModel.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+SettingsViewModel.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.viewmodel;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.SessionManager;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.StringProperty;</span>
+
+<span class="s2">/** ViewModel для налаштувань. Керує станом теми та режимом відображення. */</span>
+<span class="s0">public class </span><span class="s1">SettingsViewModel {</span>
+
+    <span class="s0">private final </span><span class="s1">SessionManager sessionManager = SessionManager.getInstance();</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">властивість поточної теми (DARK/LIGHT)</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty themeProperty() {</span>
+        <span class="s0">return </span><span class="s1">sessionManager.themeProperty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">властивість режиму відображення (GRID/LIST)</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty viewModeProperty() {</span>
+        <span class="s0">return </span><span class="s1">sessionManager.viewModeProperty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">true, якщо вибрано темну тему</span>
+     <span class="s2">*/</span>
+    <span class="s0">public boolean </span><span class="s1">isDarkTheme() {</span>
+        <span class="s0">return </span><span class="s4">&quot;DARK&quot;</span><span class="s1">.equals(sessionManager.themeProperty().get());</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Встановлює тему оформлення.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">isDark true для темної теми, false для світлої</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">setTheme(</span><span class="s0">boolean </span><span class="s1">isDark) {</span>
+        <span class="s1">sessionManager.themeProperty().set(isDark ? </span><span class="s4">&quot;DARK&quot; </span><span class="s1">: </span><span class="s4">&quot;LIGHT&quot;</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">true, якщо вибрано режим сітки (GRID)</span>
+     <span class="s2">*/</span>
+    <span class="s0">public boolean </span><span class="s1">isGridView() {</span>
+        <span class="s0">return </span><span class="s1">!</span><span class="s4">&quot;LIST&quot;</span><span class="s1">.equals(sessionManager.viewModeProperty().get());</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Встановлює режим відображення каталогу.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">isGrid true для режиму сітки, false для списку</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">setViewMode(</span><span class="s0">boolean </span><span class="s1">isGrid) {</span>
+        <span class="s1">sessionManager.viewModeProperty().set(isGrid ? </span><span class="s4">&quot;GRID&quot; </span><span class="s1">: </span><span class="s4">&quot;LIST&quot;</span><span class="s1">);</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<html>
+<head>
+<title>RegisterController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RegisterController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">java.io.IOException;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXMLLoader;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.Parent;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.Scene;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.Label;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.PasswordField;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.TextField;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.VBox;</span>
+<span class="s0">import </span><span class="s1">javafx.stage.Stage;</span>
+
+<span class="s0">public class </span><span class="s1">RegisterController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">VBox registerPane;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">VBox verifyPane;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField emailField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">PasswordField passwordField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField codeField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">Label errorLabel;</span>
+
+    <span class="s0">private </span><span class="s1">com.oliinyk.costumes.viewmodel.RegisterViewModel viewModel;</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">public void </span><span class="s1">initialize() {</span>
+        <span class="s1">com.oliinyk.costumes.service.AuthService authService =</span>
+                <span class="s0">new </span><span class="s1">com.oliinyk.costumes.service.AuthService(</span>
+                        <span class="s0">new </span><span class="s1">com.oliinyk.costumes.repository.JdbcUserRepository(),</span>
+                        <span class="s0">new </span><span class="s1">com.oliinyk.costumes.service.ConsoleEmailServiceImpl());</span>
+
+        <span class="s1">viewModel = </span><span class="s0">new </span><span class="s1">com.oliinyk.costumes.viewmodel.RegisterViewModel(authService);</span>
+
+        <span class="s2">// Біндінг властивостей</span>
+        <span class="s1">emailField.textProperty().bindBidirectional(viewModel.emailProperty());</span>
+        <span class="s1">passwordField.textProperty().bindBidirectional(viewModel.passwordProperty());</span>
+        <span class="s1">codeField.textProperty().bindBidirectional(viewModel.codeProperty());</span>
+        <span class="s1">errorLabel.textProperty().bind(viewModel.errorMessageProperty());</span>
+
+        <span class="s2">// Реакція на успішну реєстрацію</span>
+        <span class="s1">viewModel</span>
+                <span class="s1">.registrationSuccessfulProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(obs, old, success) -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(success) {</span>
+                                <span class="s1">registerPane.setVisible(</span><span class="s0">false</span><span class="s1">);</span>
+                                <span class="s1">registerPane.setManaged(</span><span class="s0">false</span><span class="s1">);</span>
+                                <span class="s1">verifyPane.setVisible(</span><span class="s0">true</span><span class="s1">);</span>
+                                <span class="s1">verifyPane.setManaged(</span><span class="s0">true</span><span class="s1">);</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s2">// Реакція на успішну верифікацію</span>
+        <span class="s1">viewModel</span>
+                <span class="s1">.verificationSuccessfulProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(obs, old, success) -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(success) {</span>
+                                <span class="s1">errorLabel.setStyle(</span><span class="s3">&quot;-fx-text-fill: -color-success-fg;&quot;</span><span class="s1">);</span>
+                                <span class="s1">verifyPane.setVisible(</span><span class="s0">false</span><span class="s1">);</span>
+                                <span class="s1">verifyPane.setManaged(</span><span class="s0">false</span><span class="s1">);</span>
+                                <span class="s1">javafx.scene.control.Button backBtn =</span>
+                                        <span class="s0">new </span><span class="s1">javafx.scene.control.Button(</span><span class="s3">&quot;Повернутися до входу&quot;</span><span class="s1">);</span>
+                                <span class="s1">backBtn.setOnAction(e -&gt; navigateBack());</span>
+                                <span class="s1">backBtn.getStyleClass().add(</span><span class="s3">&quot;accent&quot;</span><span class="s1">);</span>
+                                <span class="s1">((VBox) errorLabel.getParent()).getChildren().add(backBtn);</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">handleRegister() {</span>
+        <span class="s1">viewModel.attemptRegister();</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">handleVerify() {</span>
+        <span class="s1">viewModel.attemptVerify();</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">navigateBack() {</span>
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">FXMLLoader loader = </span><span class="s0">new </span><span class="s1">FXMLLoader(getClass().getResource(</span><span class="s3">&quot;/views/LoginView.fxml&quot;</span><span class="s1">));</span>
+            <span class="s1">Parent root = loader.load();</span>
+            <span class="s1">Stage stage = (Stage) emailField.getScene().getWindow();</span>
+            <span class="s1">stage.setScene(</span><span class="s0">new </span><span class="s1">Scene(root, </span><span class="s4">400</span><span class="s1">, </span><span class="s4">350</span><span class="s1">));</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(IOException e) {</span>
+            <span class="s1">e.printStackTrace();</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

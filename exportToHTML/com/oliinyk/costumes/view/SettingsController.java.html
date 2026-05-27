@@ -1,0 +1,88 @@
+<html>
+<head>
+<title>SettingsController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+SettingsController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">atlantafx.base.theme.PrimerDark;</span>
+<span class="s0">import </span><span class="s1">atlantafx.base.theme.PrimerLight;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.viewmodel.SettingsViewModel;</span>
+<span class="s0">import </span><span class="s1">javafx.application.Application;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.ToggleButton;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.ToggleGroup;</span>
+
+<span class="s2">/** Контролер налаштувань. Керує темою та режимом відображення каталогу. */</span>
+<span class="s0">public class </span><span class="s1">SettingsController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">ToggleButton themeToggle;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">ToggleButton gridToggle;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">ToggleButton listToggle;</span>
+
+    <span class="s0">private </span><span class="s1">SettingsViewModel viewModel;</span>
+
+    <span class="s0">public void </span><span class="s1">setViewModel(SettingsViewModel viewModel) {</span>
+        <span class="s0">this</span><span class="s1">.viewModel = viewModel;</span>
+        <span class="s1">setupUI();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupUI() {</span>
+        <span class="s2">// Налаштування теми</span>
+        <span class="s1">themeToggle.setSelected(viewModel.isDarkTheme());</span>
+        <span class="s1">updateThemeText();</span>
+
+        <span class="s1">themeToggle.setOnAction(</span>
+                <span class="s1">e -&gt; {</span>
+                    <span class="s1">viewModel.setTheme(themeToggle.isSelected());</span>
+                    <span class="s0">if </span><span class="s1">(themeToggle.isSelected()) {</span>
+                        <span class="s1">Application.setUserAgentStylesheet(</span>
+                                <span class="s0">new </span><span class="s1">PrimerDark().getUserAgentStylesheet());</span>
+                    <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                        <span class="s1">Application.setUserAgentStylesheet(</span>
+                                <span class="s0">new </span><span class="s1">PrimerLight().getUserAgentStylesheet());</span>
+                    <span class="s1">}</span>
+                    <span class="s1">updateThemeText();</span>
+                <span class="s1">});</span>
+
+        <span class="s2">// Налаштування режиму каталогу</span>
+        <span class="s1">ToggleGroup viewGroup = </span><span class="s0">new </span><span class="s1">ToggleGroup();</span>
+        <span class="s1">gridToggle.setToggleGroup(viewGroup);</span>
+        <span class="s1">listToggle.setToggleGroup(viewGroup);</span>
+
+        <span class="s0">if </span><span class="s1">(viewModel.isGridView()) {</span>
+            <span class="s1">gridToggle.setSelected(</span><span class="s0">true</span><span class="s1">);</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s1">listToggle.setSelected(</span><span class="s0">true</span><span class="s1">);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">updateThemeText() {</span>
+        <span class="s1">themeToggle.setText(themeToggle.isSelected() ? </span><span class="s3">&quot;Вимкнути&quot; </span><span class="s1">: </span><span class="s3">&quot;Увімкнути&quot;</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onGridViewSelected() {</span>
+        <span class="s1">viewModel.setViewMode(</span><span class="s0">true</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onListViewSelected() {</span>
+        <span class="s1">viewModel.setViewMode(</span><span class="s0">false</span><span class="s1">);</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

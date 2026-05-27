@@ -1,0 +1,126 @@
+<html>
+<head>
+<title>MyRentalsController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MyRentalsController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.dto.RentalDTO;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcCostumeRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalItemRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcUserRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalFacade;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalService;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.SessionManager;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleStringProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.FXCollections;</span>
+<span class="s0">import </span><span class="s1">javafx.concurrent.Task;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.TableColumn;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.TableView;</span>
+
+<span class="s2">/** Контролер особистого кабінету користувача. Відображає історію оренд. */</span>
+<span class="s0">public class </span><span class="s1">MyRentalsController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableView&lt;RentalDTO&gt; rentalsTable;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableColumn&lt;RentalDTO, String&gt; costumesCol;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableColumn&lt;RentalDTO, String&gt; startCol;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableColumn&lt;RentalDTO, String&gt; endCol;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableColumn&lt;RentalDTO, String&gt; statusCol;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TableColumn&lt;RentalDTO, String&gt; totalCol;</span>
+
+    <span class="s0">private </span><span class="s1">RentalFacade rentalFacade;</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">public void </span><span class="s1">initialize() {</span>
+        <span class="s1">rentalFacade =</span>
+                <span class="s0">new </span><span class="s1">RentalFacade(</span>
+                        <span class="s0">new </span><span class="s1">RentalService(</span>
+                                <span class="s0">new </span><span class="s1">JdbcRentalRepository(), </span><span class="s0">new </span><span class="s1">JdbcRentalItemRepository()),</span>
+                        <span class="s0">new </span><span class="s1">JdbcRentalRepository(),</span>
+                        <span class="s0">new </span><span class="s1">JdbcCostumeRepository(),</span>
+                        <span class="s0">new </span><span class="s1">JdbcUserRepository());</span>
+
+        <span class="s1">setupTable();</span>
+        <span class="s1">loadDataAsync();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupTable() {</span>
+        <span class="s1">costumesCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt;</span>
+                        <span class="s0">new </span><span class="s1">SimpleStringProperty(</span>
+                                <span class="s1">String.join(</span><span class="s3">&quot;, &quot;</span><span class="s1">, data.getValue().getCostumeNames())));</span>
+        <span class="s1">startCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getStartDate().toString()));</span>
+        <span class="s1">endCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getEndDate().toString()));</span>
+
+        <span class="s1">statusCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt; </span><span class="s0">new </span><span class="s1">SimpleStringProperty(data.getValue().getStatus()));</span>
+        <span class="s1">statusCol.setCellFactory(</span>
+                <span class="s1">column -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.TableCell&lt;&gt;() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">protected void </span><span class="s1">updateItem(String status, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(status, empty);</span>
+                                <span class="s0">if </span><span class="s1">(empty || status == </span><span class="s0">null</span><span class="s1">) {</span>
+                                    <span class="s1">setText(</span><span class="s0">null</span><span class="s1">);</span>
+                                    <span class="s1">setGraphic(</span><span class="s0">null</span><span class="s1">);</span>
+                                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                    <span class="s1">javafx.scene.control.Label badge =</span>
+                                            <span class="s0">new </span><span class="s1">javafx.scene.control.Label();</span>
+                                    <span class="s0">if </span><span class="s1">(</span><span class="s3">&quot;ACTIVE&quot;</span><span class="s1">.equals(status)) {</span>
+                                        <span class="s1">badge.setText(</span><span class="s3">&quot;Активна&quot;</span><span class="s1">);</span>
+                                        <span class="s1">badge.getStyleClass().addAll(</span><span class="s3">&quot;badge&quot;</span><span class="s1">, </span><span class="s3">&quot;accent&quot;</span><span class="s1">);</span>
+                                    <span class="s1">} </span><span class="s0">else if </span><span class="s1">(</span><span class="s3">&quot;COMPLETED&quot;</span><span class="s1">.equals(status)) {</span>
+                                        <span class="s1">badge.setText(</span><span class="s3">&quot;Завершена&quot;</span><span class="s1">);</span>
+                                        <span class="s1">badge.getStyleClass().addAll(</span><span class="s3">&quot;badge&quot;</span><span class="s1">, </span><span class="s3">&quot;success&quot;</span><span class="s1">);</span>
+                                    <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                                        <span class="s1">badge.setText(status);</span>
+                                        <span class="s1">badge.getStyleClass().add(</span><span class="s3">&quot;badge&quot;</span><span class="s1">);</span>
+                                    <span class="s1">}</span>
+                                    <span class="s1">setGraphic(badge);</span>
+                                <span class="s1">}</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">totalCol.setCellValueFactory(</span>
+                <span class="s1">data -&gt;</span>
+                        <span class="s0">new </span><span class="s1">SimpleStringProperty(</span>
+                                <span class="s1">String.format(</span><span class="s3">&quot;%.2f грн&quot;</span><span class="s1">, data.getValue().getTotalPrice())));</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">loadDataAsync() {</span>
+        <span class="s1">com.oliinyk.costumes.model.User user = SessionManager.getInstance().getCurrentUser();</span>
+        <span class="s0">if </span><span class="s1">(user == </span><span class="s0">null</span><span class="s1">) </span><span class="s0">return</span><span class="s1">;</span>
+
+        <span class="s1">Task&lt;List&lt;RentalDTO&gt;&gt; task =</span>
+                <span class="s0">new </span><span class="s1">Task&lt;&gt;() {</span>
+                    <span class="s1">@Override</span>
+                    <span class="s0">protected </span><span class="s1">List&lt;RentalDTO&gt; call() </span><span class="s0">throws </span><span class="s1">Exception {</span>
+                        <span class="s0">return </span><span class="s1">rentalFacade.getRentalsByUserId(user.getId());</span>
+                    <span class="s1">}</span>
+                <span class="s1">};</span>
+
+        <span class="s1">task.setOnSucceeded(</span>
+                <span class="s1">e -&gt; rentalsTable.setItems(FXCollections.observableArrayList(task.getValue())));</span>
+        <span class="s0">new </span><span class="s1">Thread(task).start();</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

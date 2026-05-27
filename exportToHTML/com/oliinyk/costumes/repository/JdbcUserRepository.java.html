@@ -1,0 +1,202 @@
+<html>
+<head>
+<title>JdbcUserRepository.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+JdbcUserRepository.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.repository;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.infrastructure.DatabaseManager;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">java.sql.Connection;</span>
+<span class="s0">import </span><span class="s1">java.sql.PreparedStatement;</span>
+<span class="s0">import </span><span class="s1">java.sql.ResultSet;</span>
+<span class="s0">import </span><span class="s1">java.sql.SQLException;</span>
+<span class="s0">import </span><span class="s1">java.sql.Timestamp;</span>
+<span class="s0">import </span><span class="s1">java.util.ArrayList;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/** JDBC реалізація репозиторію користувачів. Забезпечує взаємодію з таблицею users у базі даних. */</span>
+<span class="s0">public class </span><span class="s1">JdbcUserRepository </span><span class="s0">implements </span><span class="s1">UserRepository {</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Зберігає нового користувача в базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">user об'єкт користувача для збереження</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">save(User user) {</span>
+        <span class="s1">String sql =</span>
+                <span class="s4">&quot;INSERT INTO users (id, email, password_hash, role, verification_code, is_verified, is_blocked, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, user.getId());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">2</span><span class="s1">, user.getEmail());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">3</span><span class="s1">, user.getPasswordHash());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">4</span><span class="s1">, user.getRole());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">5</span><span class="s1">, user.getVerificationCode());</span>
+            <span class="s1">stmt.setBoolean(</span><span class="s5">6</span><span class="s1">, user.isVerified());</span>
+            <span class="s1">stmt.setBoolean(</span><span class="s5">7</span><span class="s1">, user.isBlocked());</span>
+            <span class="s1">stmt.setTimestamp(</span>
+                    <span class="s5">8</span><span class="s1">,</span>
+                    <span class="s1">user.getCreatedAt() != </span><span class="s0">null</span>
+                            <span class="s1">? Timestamp.valueOf(user.getCreatedAt())</span>
+                            <span class="s1">: </span><span class="s0">new </span><span class="s1">Timestamp(System.currentTimeMillis()));</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при збереженні користувача&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить користувача за його ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id унікальний ідентифікатор користувача</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional з користувачем, якщо знайдено, або порожній Optional</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">Optional&lt;User&gt; findById(UUID id) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM users WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, id);</span>
+            <span class="s0">try </span><span class="s1">(ResultSet rs = stmt.executeQuery()) {</span>
+                <span class="s0">if </span><span class="s1">(rs.next()) {</span>
+                    <span class="s0">return </span><span class="s1">Optional.of(mapResultSetToUser(rs));</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при пошуку користувача за ID&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">Optional.empty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить користувача за його електронною поштою.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">email електронна пошта користувача</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional з користувачем, якщо знайдено, або порожній Optional</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">Optional&lt;User&gt; findByEmail(String email) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM users WHERE email = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setString(</span><span class="s5">1</span><span class="s1">, email);</span>
+            <span class="s0">try </span><span class="s1">(ResultSet rs = stmt.executeQuery()) {</span>
+                <span class="s0">if </span><span class="s1">(rs.next()) {</span>
+                    <span class="s0">return </span><span class="s1">Optional.of(mapResultSetToUser(rs));</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при пошуку користувача за email&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">Optional.empty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає список усіх користувачів з бази даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">список усіх користувачів</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">List&lt;User&gt; findAll() {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM users&quot;</span><span class="s1">;</span>
+        <span class="s1">List&lt;User&gt; users = </span><span class="s0">new </span><span class="s1">ArrayList&lt;&gt;();</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql);</span>
+                <span class="s1">ResultSet rs = stmt.executeQuery()) {</span>
+            <span class="s0">while </span><span class="s1">(rs.next()) {</span>
+                <span class="s1">users.add(mapResultSetToUser(rs));</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при отриманні всіх користувачів&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">users;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оновлює дані існуючого користувача в базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">user об'єкт користувача з оновленими даними</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">update(User user) {</span>
+        <span class="s1">String sql =</span>
+                <span class="s4">&quot;UPDATE users SET email = ?, password_hash = ?, role = ?, verification_code = ?, is_verified = ?, is_blocked = ? WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setString(</span><span class="s5">1</span><span class="s1">, user.getEmail());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">2</span><span class="s1">, user.getPasswordHash());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">3</span><span class="s1">, user.getRole());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">4</span><span class="s1">, user.getVerificationCode());</span>
+            <span class="s1">stmt.setBoolean(</span><span class="s5">5</span><span class="s1">, user.isVerified());</span>
+            <span class="s1">stmt.setBoolean(</span><span class="s5">6</span><span class="s1">, user.isBlocked());</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">7</span><span class="s1">, user.getId());</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при оновленні користувача&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Видаляє користувача за його ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id унікальний ідентифікатор користувача для видалення</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">delete(UUID id) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;DELETE FROM users WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, id);</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при видаленні користувача&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Перетворює рядок ResultSet у об'єкт User.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rs ResultSet з результатами запиту</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">об'єкт User</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">SQLException якщо виникла помилка при читанні з ResultSet</span>
+     <span class="s2">*/</span>
+    <span class="s0">private </span><span class="s1">User mapResultSetToUser(ResultSet rs) </span><span class="s0">throws </span><span class="s1">SQLException {</span>
+        <span class="s0">return </span><span class="s1">User.builder()</span>
+                <span class="s1">.id(rs.getObject(</span><span class="s4">&quot;id&quot;</span><span class="s1">, UUID.</span><span class="s0">class</span><span class="s1">))</span>
+                <span class="s1">.email(rs.getString(</span><span class="s4">&quot;email&quot;</span><span class="s1">))</span>
+                <span class="s1">.passwordHash(rs.getString(</span><span class="s4">&quot;password_hash&quot;</span><span class="s1">))</span>
+                <span class="s1">.role(rs.getString(</span><span class="s4">&quot;role&quot;</span><span class="s1">))</span>
+                <span class="s1">.verificationCode(rs.getString(</span><span class="s4">&quot;verification_code&quot;</span><span class="s1">))</span>
+                <span class="s1">.isVerified(rs.getBoolean(</span><span class="s4">&quot;is_verified&quot;</span><span class="s1">))</span>
+                <span class="s1">.isBlocked(rs.getBoolean(</span><span class="s4">&quot;is_blocked&quot;</span><span class="s1">))</span>
+                <span class="s1">.createdAt(rs.getTimestamp(</span><span class="s4">&quot;created_at&quot;</span><span class="s1">).toLocalDateTime())</span>
+                <span class="s1">.build();</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

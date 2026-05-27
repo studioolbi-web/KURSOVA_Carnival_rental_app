@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox spacing="20.0" style="-fx-padding: 30; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.CatalogController">
+    <!-- Візуальний баг 4: Шапка каталогу (VBox замість HBox для запобігання обрізанню) -->
+    <VBox spacing="15">
+        <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Каталог Костюмів" />
+        
+        <HBox spacing="20" alignment="CENTER_LEFT">
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Label text="Період оренди:" style="-fx-font-weight: bold;" />
+                <DatePicker fx:id="startDatePicker" prefWidth="150" promptText="Від" />
+                <DatePicker fx:id="endDatePicker" prefWidth="150" promptText="До" />
+            </HBox>
+            
+            <Region HBox.hgrow="ALWAYS" />
+            
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button fx:id="gridModeBtn" styleClass="button-icon">
+                    <graphic><FontIcon iconLiteral="fas-th" iconSize="18" /></graphic>
+                    <tooltip><Tooltip text="Сітка" /></tooltip>
+                </Button>
+                <Button fx:id="listModeBtn" styleClass="button-icon">
+                    <graphic><FontIcon iconLiteral="fas-list" iconSize="18" /></graphic>
+                    <tooltip><Tooltip text="Список" /></tooltip>
+                </Button>
+            </HBox>
+            
+            <TextField fx:id="searchField" promptText="Пошук за назвою..." prefWidth="250" />
+        </HBox>
+    </VBox>
+
+    <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS" styleClass="edge-to-edge">
+        <TilePane fx:id="costumesGrid" hgap="25" vgap="25" prefColumns="3" alignment="TOP_CENTER" style="-fx-padding: 10;" />
+    </ScrollPane>
+</VBox>

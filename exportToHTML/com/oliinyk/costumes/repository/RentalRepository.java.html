@@ -1,0 +1,58 @@
+<html>
+<head>
+<title>RentalRepository.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RentalRepository.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.repository;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Rental;</span>
+<span class="s0">import </span><span class="s1">java.sql.Connection;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Репозиторій для управління даними про оренду. Розширює базовий інтерфейс Repository для моделі</span>
+ <span class="s2">* Rental.</span>
+ <span class="s2">*/</span>
+<span class="s0">public interface </span><span class="s1">RentalRepository </span><span class="s0">extends </span><span class="s1">Repository&lt;Rental&gt; {</span>
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить усі оренди, що належать конкретному користувачу.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">userId унікальний ідентифікатор користувача</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">список усіх оренд користувача</span>
+     <span class="s2">*/</span>
+    <span class="s1">List&lt;Rental&gt; findByUserId(UUID userId);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Зберігає дані про оренду в межах існуючої транзакції.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rental об'єкт оренди для збереження</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">conn існуюче SQL з'єднання</span>
+     <span class="s2">*/</span>
+    <span class="s0">void </span><span class="s1">save(Rental rental, Connection conn);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Перевіряє, чи є вказаний костюм вільним для оренди на заданий період.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumeId унікальний ідентифікатор костюма</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">start дата початку бажаного періоду</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">end дата закінчення бажаного періоду</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">true, якщо костюм доступний для оренди, false — якщо зайнятий</span>
+     <span class="s2">*/</span>
+    <span class="s0">boolean </span><span class="s1">isCostumeAvailable(UUID costumeId, java.time.LocalDate start, java.time.LocalDate end);</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

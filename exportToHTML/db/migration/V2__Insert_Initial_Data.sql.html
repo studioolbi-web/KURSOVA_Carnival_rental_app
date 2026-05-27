@@ -1,0 +1,48 @@
+<html>
+<head>
+<title>V2__Insert_Initial_Data.sql</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+.s3 { color: #067d17;}
+.s4 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+V2__Insert_Initial_Data.sql</font>
+</center></td></tr></table>
+<pre><span class="s0">-- Insert Categories</span>
+<span class="s2">INSERT INTO </span><span class="s1">categories (id, </span><span class="s2">name</span><span class="s1">, description) </span><span class="s2">VALUES </span>
+<span class="s1">(</span><span class="s3">'11111111-1111-1111-1111-111111111111'</span><span class="s1">, </span><span class="s3">'Історичні'</span><span class="s1">, </span><span class="s3">'Костюми з різних історичних епох'</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'22222222-2222-2222-2222-222222222222'</span><span class="s1">, </span><span class="s3">'Фентезі'</span><span class="s1">, </span><span class="s3">'Ельфи, гноми, орки та інші міфічні істоти'</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'33333333-3333-3333-3333-333333333333'</span><span class="s1">, </span><span class="s3">'Супергерої'</span><span class="s1">, </span><span class="s3">'Костюми відомих персонажів коміксів'</span><span class="s1">);</span>
+
+<span class="s0">-- Insert Users</span>
+<span class="s0">-- Пароль для обох акаунтів: '1234' (хеш згенеровано через jBCrypt cost=10)</span>
+<span class="s2">INSERT INTO </span><span class="s1">users (id, email, password_hash, </span><span class="s2">role</span><span class="s1">, is_verified) </span><span class="s2">VALUES </span>
+<span class="s1">(</span><span class="s3">'44444444-4444-4444-4444-444444444444'</span><span class="s1">, </span><span class="s3">'admin@carnival.com'</span><span class="s1">, </span><span class="s3">'$2a$10$kmMMrgazlBWlsBu.52YyzeYGUFGgkRPNeWEF5/1O.RRRXIsglFBMm'</span><span class="s1">, </span><span class="s3">'ADMIN'</span><span class="s1">, </span><span class="s2">TRUE</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'55555555-5555-5555-5555-555555555555'</span><span class="s1">, </span><span class="s3">'user@carnival.com'</span><span class="s1">, </span><span class="s3">'$2a$10$kmMMrgazlBWlsBu.52YyzeYGUFGgkRPNeWEF5/1O.RRRXIsglFBMm'</span><span class="s1">, </span><span class="s3">'USER'</span><span class="s1">, </span><span class="s2">TRUE</span><span class="s1">);</span>
+
+<span class="s0">-- Insert Costumes</span>
+<span class="s2">INSERT INTO </span><span class="s1">costumes (id, category_id, </span><span class="s2">name</span><span class="s1">, description, price_per_day) </span><span class="s2">VALUES </span>
+<span class="s1">(</span><span class="s3">'66666666-6666-6666-6666-666666666666'</span><span class="s1">, </span><span class="s3">'11111111-1111-1111-1111-111111111111'</span><span class="s1">, </span><span class="s3">'Лицарський обладунок'</span><span class="s1">, </span><span class="s3">'Повний комплект лицарських обладунків 15 століття'</span><span class="s1">, </span><span class="s4">500.00</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'77777777-7777-7777-7777-777777777777'</span><span class="s1">, </span><span class="s3">'22222222-2222-2222-2222-222222222222'</span><span class="s1">, </span><span class="s3">'Костюм ельфа'</span><span class="s1">, </span><span class="s3">'Зелений плащ, лук та стріли'</span><span class="s1">, </span><span class="s4">300.00</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'88888888-8888-8888-8888-888888888888'</span><span class="s1">, </span><span class="s3">'33333333-3333-3333-3333-333333333333'</span><span class="s1">, </span><span class="s3">'Бетмен'</span><span class="s1">, </span><span class="s3">'Чорний плащ та маска'</span><span class="s1">, </span><span class="s4">450.00</span><span class="s1">);</span>
+
+<span class="s0">-- Insert Rentals</span>
+<span class="s2">INSERT INTO </span><span class="s1">rentals (id, user_id, start_date, end_date, total_price, status) </span><span class="s2">VALUES </span>
+<span class="s1">(</span><span class="s3">'99999999-9999-9999-9999-999999999999'</span><span class="s1">, </span><span class="s3">'55555555-5555-5555-5555-555555555555'</span><span class="s1">, </span><span class="s3">'2023-10-25'</span><span class="s1">, </span><span class="s3">'2023-10-27'</span><span class="s1">, </span><span class="s4">1000.00</span><span class="s1">, </span><span class="s3">'COMPLETED'</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'00000000-0000-0000-0000-000000000000'</span><span class="s1">, </span><span class="s3">'55555555-5555-5555-5555-555555555555'</span><span class="s1">, </span><span class="s3">'2023-11-01'</span><span class="s1">, </span><span class="s3">'2023-11-05'</span><span class="s1">, </span><span class="s4">1800.00</span><span class="s1">, </span><span class="s3">'ACTIVE'</span><span class="s1">);</span>
+
+<span class="s0">-- Insert Rental Items</span>
+<span class="s2">INSERT INTO </span><span class="s1">rental_items (rental_id, costume_id, price_at_rental) </span><span class="s2">VALUES </span>
+<span class="s1">(</span><span class="s3">'99999999-9999-9999-9999-999999999999'</span><span class="s1">, </span><span class="s3">'66666666-6666-6666-6666-666666666666'</span><span class="s1">, </span><span class="s4">500.00</span><span class="s1">),</span>
+<span class="s1">(</span><span class="s3">'00000000-0000-0000-0000-000000000000'</span><span class="s1">, </span><span class="s3">'88888888-8888-8888-8888-888888888888'</span><span class="s1">, </span><span class="s4">450.00</span><span class="s1">);</span>
+</pre>
+</body>
+</html>

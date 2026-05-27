@@ -1,0 +1,27 @@
+<html>
+<head>
+<title>V8__Add_User_Blocking_And_Availability.sql</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+V8__Add_User_Blocking_And_Availability.sql</font>
+</center></td></tr></table>
+<pre><span class="s0">-- Додавання можливості блокування користувачів</span>
+<span class="s0">-- Вимога розділу 6 (Адмін-панель)</span>
+
+<span class="s2">ALTER TABLE </span><span class="s1">users </span><span class="s2">ADD COLUMN </span><span class="s1">is_blocked BOOLEAN </span><span class="s2">NOT NULL DEFAULT FALSE</span><span class="s1">;</span>
+
+<span class="s0">-- Індекси для прискорення перевірки оренди</span>
+<span class="s2">CREATE INDEX </span><span class="s1">idx_rentals_dates </span><span class="s2">ON </span><span class="s1">rentals(start_date, end_date);</span>
+<span class="s2">CREATE INDEX </span><span class="s1">idx_rental_items_costume_id </span><span class="s2">ON </span><span class="s1">rental_items(costume_id);</span>
+</pre>
+</body>
+</html>

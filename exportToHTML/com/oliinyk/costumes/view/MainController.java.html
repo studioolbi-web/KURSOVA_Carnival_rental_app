@@ -1,0 +1,148 @@
+<html>
+<head>
+<title>MainController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MainController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcCostumeRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalItemRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcUserRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalFacade;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.RentalService;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.viewmodel.BasketViewModel;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.viewmodel.CatalogViewModel;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.viewmodel.SettingsViewModel;</span>
+<span class="s0">import </span><span class="s1">java.io.IOException;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXMLLoader;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.Node;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.Scene;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.StackPane;</span>
+<span class="s0">import </span><span class="s1">javafx.stage.Stage;</span>
+
+<span class="s0">public class </span><span class="s1">MainController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">StackPane contentArea;</span>
+
+    <span class="s2">// Створюємо загальний ViewModel для каталогу, щоб не втрачати стан при перемиканні</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">javafx.scene.control.Button btnAdmin;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">javafx.scene.control.Button btnMyRentals;</span>
+
+    <span class="s0">private final </span><span class="s1">CatalogViewModel catalogViewModel = </span><span class="s0">new </span><span class="s1">CatalogViewModel();</span>
+    <span class="s0">private </span><span class="s1">BasketViewModel basketViewModel;</span>
+    <span class="s0">private final </span><span class="s1">SettingsViewModel settingsViewModel = </span><span class="s0">new </span><span class="s1">SettingsViewModel();</span>
+    <span class="s0">private </span><span class="s1">RentalFacade rentalFacade;</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">public void </span><span class="s1">initialize() {</span>
+        <span class="s2">// Ініціалізація фасаду</span>
+        <span class="s1">rentalFacade =</span>
+                <span class="s0">new </span><span class="s1">RentalFacade(</span>
+                        <span class="s0">new </span><span class="s1">RentalService(</span>
+                                <span class="s0">new </span><span class="s1">JdbcRentalRepository(), </span><span class="s0">new </span><span class="s1">JdbcRentalItemRepository()),</span>
+                        <span class="s0">new </span><span class="s1">JdbcRentalRepository(),</span>
+                        <span class="s0">new </span><span class="s1">JdbcCostumeRepository(),</span>
+                        <span class="s0">new </span><span class="s1">JdbcUserRepository());</span>
+
+        <span class="s1">basketViewModel = </span><span class="s0">new </span><span class="s1">BasketViewModel(rentalFacade);</span>
+
+        <span class="s2">// Ховаємо кнопки залежно від ролі (Вимога розділу 2.2)</span>
+        <span class="s1">com.oliinyk.costumes.model.User user =</span>
+                <span class="s1">com.oliinyk.costumes.service.SessionManager.getInstance().getCurrentUser();</span>
+
+        <span class="s0">boolean </span><span class="s1">isAdmin = user != </span><span class="s0">null </span><span class="s1">&amp;&amp; </span><span class="s3">&quot;ADMIN&quot;</span><span class="s1">.equals(user.getRole());</span>
+
+        <span class="s1">btnAdmin.setVisible(isAdmin);</span>
+        <span class="s1">btnAdmin.setManaged(isAdmin);</span>
+
+        <span class="s2">// &quot;Мої оренди&quot; доступні всім ролям (Вимога UI/UX)</span>
+        <span class="s1">btnMyRentals.setVisible(</span><span class="s0">true</span><span class="s1">);</span>
+        <span class="s1">btnMyRentals.setManaged(</span><span class="s0">true</span><span class="s1">);</span>
+
+        <span class="s1">showCatalog(); </span><span class="s2">// Відкриваємо каталог при старті</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">showCatalog() {</span>
+        <span class="s1">catalogViewModel.loadFromDatabase(); </span><span class="s2">// Оновлюємо дані перед показом</span>
+        <span class="s1">loadView(</span><span class="s3">&quot;/views/CatalogView.fxml&quot;</span><span class="s1">, catalogViewModel);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">showBasket() {</span>
+        <span class="s1">basketViewModel.refresh();</span>
+        <span class="s1">loadView(</span><span class="s3">&quot;/views/BasketView.fxml&quot;</span><span class="s1">, basketViewModel);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">showMyRentals() {</span>
+        <span class="s1">loadView(</span><span class="s3">&quot;/views/MyRentalsView.fxml&quot;</span><span class="s1">, </span><span class="s0">null</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">showSettings() {</span>
+        <span class="s1">loadView(</span><span class="s3">&quot;/views/SettingsView.fxml&quot;</span><span class="s1">, settingsViewModel);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">showAdminPanel() {</span>
+        <span class="s1">loadView(</span><span class="s3">&quot;/views/AdminPanelView.fxml&quot;</span><span class="s1">, </span><span class="s0">null</span><span class="s1">);</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">logout() {</span>
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">FXMLLoader loader = </span><span class="s0">new </span><span class="s1">FXMLLoader(getClass().getResource(</span><span class="s3">&quot;/views/LoginView.fxml&quot;</span><span class="s1">));</span>
+            <span class="s1">Stage stage = (Stage) contentArea.getScene().getWindow();</span>
+            <span class="s1">stage.setScene(</span><span class="s0">new </span><span class="s1">Scene(loader.load(), </span><span class="s4">400</span><span class="s1">, </span><span class="s4">350</span><span class="s1">));</span>
+
+            <span class="s2">// Візуальний баг 2: Розмір вікна при Logout (Вимога UX)</span>
+            <span class="s1">stage.setMaximized(</span><span class="s0">false</span><span class="s1">);</span>
+            <span class="s1">stage.setWidth(</span><span class="s4">600</span><span class="s1">);</span>
+            <span class="s1">stage.setHeight(</span><span class="s4">500</span><span class="s1">);</span>
+            <span class="s1">stage.setMinWidth(</span><span class="s4">600</span><span class="s1">);</span>
+            <span class="s1">stage.setMinHeight(</span><span class="s4">500</span><span class="s1">);</span>
+            <span class="s1">stage.centerOnScreen();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(IOException e) {</span>
+            <span class="s1">e.printStackTrace();</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">loadView(String fxmlPath, Object viewModel) {</span>
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">FXMLLoader loader = </span><span class="s0">new </span><span class="s1">FXMLLoader(getClass().getResource(fxmlPath));</span>
+            <span class="s1">Node view = loader.load();</span>
+
+            <span class="s1">Object controller = loader.getController();</span>
+            <span class="s0">if </span><span class="s1">(controller </span><span class="s0">instanceof </span><span class="s1">CatalogController) {</span>
+                <span class="s1">((CatalogController) controller).setViewModel((CatalogViewModel) viewModel);</span>
+            <span class="s1">} </span><span class="s0">else if </span><span class="s1">(controller </span><span class="s0">instanceof </span><span class="s1">BasketController) {</span>
+                <span class="s1">((BasketController) controller).setViewModel((BasketViewModel) viewModel);</span>
+            <span class="s1">} </span><span class="s0">else if </span><span class="s1">(controller </span><span class="s0">instanceof </span><span class="s1">SettingsController) {</span>
+                <span class="s1">((SettingsController) controller).setViewModel((SettingsViewModel) viewModel);</span>
+            <span class="s1">}</span>
+
+            <span class="s1">contentArea.getChildren().setAll(view);</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(IOException e) {</span>
+            <span class="s1">e.printStackTrace();</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

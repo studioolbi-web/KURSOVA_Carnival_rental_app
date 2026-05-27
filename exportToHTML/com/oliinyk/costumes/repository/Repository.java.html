@@ -1,0 +1,68 @@
+<html>
+<head>
+<title>Repository.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+Repository.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.repository;</span>
+
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Базовий інтерфейс репозиторію для виконання CRUD операцій.</span>
+ <span class="s2">*</span>
+ <span class="s2">* </span><span class="s3">@param </span><span class="s1">&lt;</span><span class="s2">T</span><span class="s1">&gt; </span><span class="s2">Тип об'єкта моделі</span>
+ <span class="s2">*/</span>
+<span class="s0">public interface </span><span class="s1">Repository&lt;T&gt; {</span>
+    <span class="s2">/**</span>
+     <span class="s2">* Зберегти новий об'єкт у базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">entity Об'єкт для збереження</span>
+     <span class="s2">*/</span>
+    <span class="s0">void </span><span class="s1">save(T entity);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Знайти об'єкт за його унікальним ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id UUID об'єкта</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional, що містить об'єкт, або порожній, якщо не знайдено</span>
+     <span class="s2">*/</span>
+    <span class="s1">Optional&lt;T&gt; findById(UUID id);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Отримати список усіх об'єктів даного типу.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Список усіх об'єктів</span>
+     <span class="s2">*/</span>
+    <span class="s1">List&lt;T&gt; findAll();</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оновити існуючий об'єкт у базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">entity Об'єкт з оновленими даними</span>
+     <span class="s2">*/</span>
+    <span class="s0">void </span><span class="s1">update(T entity);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Видалити об'єкт за його ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id UUID об'єкта для видалення</span>
+     <span class="s2">*/</span>
+    <span class="s0">void </span><span class="s1">delete(UUID id);</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

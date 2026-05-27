@@ -1,0 +1,79 @@
+<html>
+<head>
+<title>ImageService.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #8c8c8c; font-style: italic;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ImageService.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import </span><span class="s1">java.io.File;</span>
+<span class="s0">import </span><span class="s1">java.io.IOException;</span>
+<span class="s0">import </span><span class="s1">java.nio.file.Files;</span>
+<span class="s0">import </span><span class="s1">java.nio.file.Path;</span>
+<span class="s0">import </span><span class="s1">java.nio.file.Paths;</span>
+<span class="s0">import </span><span class="s1">java.nio.file.StandardCopyOption;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/** Сервіс для управління зображеннями костюмів. */</span>
+<span class="s0">public class </span><span class="s1">ImageService {</span>
+
+    <span class="s0">private static final </span><span class="s1">String IMAGE_DIR = </span><span class="s3">&quot;app_data/images&quot;</span><span class="s1">;</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор сервісу. Створює директорію для збереження зображень, якщо вона не існує.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@throws </span><span class="s2">RuntimeException якщо не вдалося створити директорію</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">ImageService() {</span>
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">Files.createDirectories(Paths.get(IMAGE_DIR));</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(IOException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s3">&quot;Не вдалося створити директорію для зображень&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Копіює обраний файл зображення у внутрішню директорію додатку з унікальним ім'ям.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@param </span><span class="s2">sourceFile Вихідний файл зображення</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">Відносний шлях до збереженого зображення у системі або null, якщо файл не вказано</span>
+     <span class="s2">* </span><span class="s4">@throws </span><span class="s2">RuntimeException при помилках копіювання файлу</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">String saveImage(File sourceFile) {</span>
+        <span class="s0">if </span><span class="s1">(sourceFile == </span><span class="s0">null</span><span class="s1">) </span><span class="s0">return null</span><span class="s1">;</span>
+
+        <span class="s1">String extension = </span><span class="s3">&quot;&quot;</span><span class="s1">;</span>
+        <span class="s1">String fileName = sourceFile.getName();</span>
+        <span class="s0">int </span><span class="s1">i = fileName.lastIndexOf(</span><span class="s3">'.'</span><span class="s1">);</span>
+        <span class="s0">if </span><span class="s1">(i &gt; </span><span class="s5">0</span><span class="s1">) {</span>
+            <span class="s1">extension = fileName.substring(i);</span>
+        <span class="s1">}</span>
+
+        <span class="s1">String newFileName = UUID.randomUUID().toString() + extension;</span>
+        <span class="s1">Path targetPath = Paths.get(IMAGE_DIR, newFileName);</span>
+
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);</span>
+            <span class="s2">// Повертаємо відносний шлях для збереження в БД</span>
+            <span class="s0">return </span><span class="s1">IMAGE_DIR + </span><span class="s3">&quot;/&quot; </span><span class="s1">+ newFileName;</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(IOException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s3">&quot;Помилка при збереженні файлу зображення&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

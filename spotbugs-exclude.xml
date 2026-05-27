@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Ігноруємо попередження про "Expose Internal Representation" (EI_EXPOSE_REP та EI_EXPOSE_REP2). 
+         Ці попередження виникають через стандартні патерни JavaFX (повернення Properties/ObservableList) 
+         та ін'єкцію залежностей (передача Repository у Service). -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+</FindBugsFilter>

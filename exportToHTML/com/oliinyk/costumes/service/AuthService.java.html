@@ -1,0 +1,135 @@
+<html>
+<head>
+<title>AuthService.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+AuthService.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.UserRepository;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDateTime;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+<span class="s0">import </span><span class="s1">org.mindrot.jbcrypt.BCrypt;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Сервіс для аутентифікації та авторизації користувачів. Відповідає за реєстрацію, вхід та</span>
+ <span class="s2">* верифікацію акаунтів.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">AuthService {</span>
+
+    <span class="s0">private final </span><span class="s1">UserRepository userRepository;</span>
+    <span class="s0">private final </span><span class="s1">EmailService emailService;</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор сервісу аутентифікації.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">userRepository репозиторій для роботи з користувачами</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">emailService сервіс для відправки електронних листів</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">AuthService(UserRepository userRepository, EmailService emailService) {</span>
+        <span class="s0">this</span><span class="s1">.userRepository = userRepository;</span>
+        <span class="s0">this</span><span class="s1">.emailService = emailService;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Реєстрація нового користувача із хешуванням пароля.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">email електронна пошта користувача</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rawPassword пароль у відкритому вигляді</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">role роль користувача (наприклад, &quot;USER&quot; або &quot;ADMIN&quot;)</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">об'єкт створеного користувача</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">IllegalArgumentException якщо користувач із таким email вже існує</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">User registerUser(String email, String rawPassword, String role) {</span>
+        <span class="s0">if </span><span class="s1">(userRepository.findByEmail(email).isPresent()) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalArgumentException(</span><span class="s4">&quot;Користувач з таким email вже існує.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+
+        <span class="s2">// Хешування пароля перед збереженням у БД</span>
+        <span class="s1">String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());</span>
+        <span class="s1">String verificationCode = UUID.randomUUID().toString().substring(</span><span class="s5">0</span><span class="s1">, </span><span class="s5">6</span><span class="s1">);</span>
+
+        <span class="s1">User newUser =</span>
+                <span class="s1">User.builder()</span>
+                        <span class="s1">.id(UUID.randomUUID())</span>
+                        <span class="s1">.email(email)</span>
+                        <span class="s1">.passwordHash(hashedPassword)</span>
+                        <span class="s1">.role(role)</span>
+                        <span class="s1">.verificationCode(verificationCode)</span>
+                        <span class="s1">.isVerified(</span><span class="s0">false</span><span class="s1">)</span>
+                        <span class="s1">.createdAt(LocalDateTime.now())</span>
+                        <span class="s1">.build();</span>
+
+        <span class="s1">userRepository.save(newUser);</span>
+
+        <span class="s2">// Відправка коду верифікації</span>
+        <span class="s1">emailService.sendVerificationEmail(email, verificationCode);</span>
+
+        <span class="s0">return </span><span class="s1">newUser;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Авторизація користувача за email та паролем.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">email електронна пошта</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rawPassword пароль у відкритому вигляді</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional з об'єктом користувача, якщо авторизація успішна</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо акаунт заблоковано</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">Optional&lt;User&gt; login(String email, String rawPassword) {</span>
+        <span class="s1">Optional&lt;User&gt; userOpt = userRepository.findByEmail(email);</span>
+
+        <span class="s0">if </span><span class="s1">(userOpt.isPresent()) {</span>
+            <span class="s1">User user = userOpt.get();</span>
+            <span class="s2">// Перевірка відповідності введеного пароля хешу з БД</span>
+            <span class="s0">if </span><span class="s1">(BCrypt.checkpw(rawPassword, user.getPasswordHash())) {</span>
+                <span class="s0">if </span><span class="s1">(user.isBlocked()) {</span>
+                    <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Ваш акаунт заблоковано адміністратором.&quot;</span><span class="s1">);</span>
+                <span class="s1">}</span>
+                <span class="s0">return </span><span class="s1">Optional.of(user);</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+
+        <span class="s0">return </span><span class="s1">Optional.empty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Підтвердження пошти користувача за допомогою коду верифікації.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">email електронна пошта користувача</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">code код верифікації</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">true, якщо верифікація пройшла успішно, інакше false</span>
+     <span class="s2">*/</span>
+    <span class="s0">public boolean </span><span class="s1">verifyUser(String email, String code) {</span>
+        <span class="s1">Optional&lt;User&gt; userOpt = userRepository.findByEmail(email);</span>
+
+        <span class="s0">if </span><span class="s1">(userOpt.isPresent()) {</span>
+            <span class="s1">User user = userOpt.get();</span>
+            <span class="s0">if </span><span class="s1">(!user.isVerified() &amp;&amp; code.equals(user.getVerificationCode())) {</span>
+                <span class="s1">user.setVerified(</span><span class="s0">true</span><span class="s1">);</span>
+                <span class="s1">user.setVerificationCode(</span><span class="s0">null</span><span class="s1">); </span><span class="s2">// Очищаємо код після успішної верифікації</span>
+                <span class="s1">userRepository.update(user);</span>
+                <span class="s0">return true</span><span class="s1">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s0">return false</span><span class="s1">;</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

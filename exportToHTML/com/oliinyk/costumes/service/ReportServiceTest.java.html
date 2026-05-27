@@ -1,0 +1,70 @@
+<html>
+<head>
+<title>ReportServiceTest.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #067d17;}
+.s3 { color: #1750eb;}
+.s4 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+ReportServiceTest.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import static </span><span class="s1">org.junit.jupiter.api.Assertions.*;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.dto.RentalDTO;</span>
+<span class="s0">import </span><span class="s1">java.io.File;</span>
+<span class="s0">import </span><span class="s1">java.io.IOException;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.nio.file.Files;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.Test;</span>
+<span class="s0">import </span><span class="s1">org.junit.jupiter.api.io.TempDir;</span>
+
+<span class="s0">class </span><span class="s1">ReportServiceTest {</span>
+
+    <span class="s1">@TempDir File tempDir;</span>
+
+    <span class="s1">@Test</span>
+    <span class="s0">void </span><span class="s1">exportRentalsToCsv_Successful() </span><span class="s0">throws </span><span class="s1">IOException {</span>
+        <span class="s1">ReportService reportService = </span><span class="s0">new </span><span class="s1">ReportService();</span>
+        <span class="s1">File reportFile = </span><span class="s0">new </span><span class="s1">File(tempDir, </span><span class="s2">&quot;test_report.csv&quot;</span><span class="s1">);</span>
+
+        <span class="s1">RentalDTO rental =</span>
+                <span class="s1">RentalDTO.builder()</span>
+                        <span class="s1">.id(UUID.randomUUID())</span>
+                        <span class="s1">.userEmail(</span><span class="s2">&quot;user@example.com&quot;</span><span class="s1">)</span>
+                        <span class="s1">.startDate(LocalDate.of(</span><span class="s3">2026</span><span class="s1">, </span><span class="s3">5</span><span class="s1">, </span><span class="s3">1</span><span class="s1">))</span>
+                        <span class="s1">.endDate(LocalDate.of(</span><span class="s3">2026</span><span class="s1">, </span><span class="s3">5</span><span class="s1">, </span><span class="s3">5</span><span class="s1">))</span>
+                        <span class="s1">.status(</span><span class="s2">&quot;COMPLETED&quot;</span><span class="s1">)</span>
+                        <span class="s1">.totalPrice(</span><span class="s0">new </span><span class="s1">BigDecimal(</span><span class="s2">&quot;100.00&quot;</span><span class="s1">))</span>
+                        <span class="s1">.totalDeposit(</span><span class="s0">new </span><span class="s1">BigDecimal(</span><span class="s2">&quot;50.00&quot;</span><span class="s1">))</span>
+                        <span class="s1">.penaltyAmount(</span><span class="s0">new </span><span class="s1">BigDecimal(</span><span class="s2">&quot;10.00&quot;</span><span class="s1">))</span>
+                        <span class="s1">.costumeNames(List.of(</span><span class="s2">&quot;Costume 1&quot;</span><span class="s1">, </span><span class="s2">&quot;Costume 2&quot;</span><span class="s1">))</span>
+                        <span class="s1">.build();</span>
+
+        <span class="s1">reportService.exportRentalsToCsv(List.of(rental), reportFile);</span>
+
+        <span class="s1">assertTrue(reportFile.exists());</span>
+        <span class="s1">List&lt;String&gt; lines = Files.readAllLines(reportFile.toPath());</span>
+
+        <span class="s4">// Lines: BOM+Header, Data</span>
+        <span class="s1">assertEquals(</span><span class="s3">2</span><span class="s1">, lines.size());</span>
+        <span class="s1">assertTrue(lines.get(</span><span class="s3">0</span><span class="s1">).contains(</span><span class="s2">&quot;Користувач&quot;</span><span class="s1">));</span>
+        <span class="s1">assertTrue(lines.get(</span><span class="s3">1</span><span class="s1">).contains(</span><span class="s2">&quot;user@example.com&quot;</span><span class="s1">));</span>
+        <span class="s1">assertTrue(lines.get(</span><span class="s3">1</span><span class="s1">).contains(</span><span class="s2">&quot;Costume 1; Costume 2&quot;</span><span class="s1">));</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

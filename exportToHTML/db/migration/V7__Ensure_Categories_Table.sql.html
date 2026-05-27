@@ -1,0 +1,32 @@
+<html>
+<head>
+<title>V7__Ensure_Categories_Table.sql</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+.s3 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+V7__Ensure_Categories_Table.sql</font>
+</center></td></tr></table>
+<pre><span class="s0">-- Перевірка та створення таблиці категорій, якщо вона відсутня</span>
+<span class="s0">-- Це забезпечує сумісність у разі розбіжностей у початкових міграціях</span>
+
+<span class="s2">CREATE TABLE </span><span class="s1">IF </span><span class="s2">NOT EXISTS </span><span class="s1">categories (</span>
+    <span class="s1">id UUID </span><span class="s2">PRIMARY KEY</span><span class="s1">,</span>
+    <span class="s2">name VARCHAR</span><span class="s1">(</span><span class="s3">255</span><span class="s1">) </span><span class="s2">NOT NULL UNIQUE</span><span class="s1">,</span>
+    <span class="s1">description TEXT</span>
+<span class="s1">);</span>
+
+<span class="s0">-- Також переконаємося, що в таблиці costumes є правильний зовнішній ключ</span>
+<span class="s0">-- (H2 підтримує IF NOT EXISTS для багатьох операцій, але для ALTER TABLE краще бути обережним)</span>
+<span class="s0">-- Оскільки Flyway гарантує послідовність, ми просто додаємо створення таблиці.</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<html>
+<head>
+<title>RentalDTO.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RentalDTO.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.dto;</span>
+
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+<span class="s0">import </span><span class="s1">lombok.Builder;</span>
+<span class="s0">import </span><span class="s1">lombok.Data;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* DTO для передачі даних про замовлення (оренду). Використовується для відокремлення моделей БД від</span>
+ <span class="s2">* шару представлення.</span>
+ <span class="s2">*/</span>
+<span class="s1">@Data</span>
+<span class="s1">@Builder</span>
+<span class="s0">public class </span><span class="s1">RentalDTO {</span>
+    <span class="s0">private </span><span class="s1">UUID id;</span>
+    <span class="s0">private </span><span class="s1">UUID userId;</span>
+    <span class="s0">private </span><span class="s1">String userEmail;</span>
+    <span class="s0">private </span><span class="s1">LocalDate startDate;</span>
+    <span class="s0">private </span><span class="s1">LocalDate endDate;</span>
+    <span class="s0">private </span><span class="s1">BigDecimal totalPrice;</span>
+    <span class="s0">private </span><span class="s1">BigDecimal penaltyAmount;</span>
+    <span class="s0">private </span><span class="s1">BigDecimal totalDeposit;</span>
+    <span class="s0">private </span><span class="s1">String status;</span>
+    <span class="s0">private </span><span class="s1">List&lt;String&gt; costumeNames;</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<html>
+<head>
+<title>RentalFacade.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RentalFacade.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.dto.RentalDTO;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Rental;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.CostumeRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.RentalRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.UserRepository;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+<span class="s0">import </span><span class="s1">java.util.stream.Collectors;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Фасад для роботи з орендами. Реалізує патерн Facade (Вимога розділу 4.3.2). Спрощує доступ до</span>
+ <span class="s2">* бізнес-логіки для шару представлення.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">RentalFacade {</span>
+
+    <span class="s0">private final </span><span class="s1">RentalService rentalService;</span>
+    <span class="s0">private final </span><span class="s1">RentalRepository rentalRepository;</span>
+    <span class="s0">private final </span><span class="s1">CostumeRepository costumeRepository;</span>
+    <span class="s0">private final </span><span class="s1">UserRepository userRepository;</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор фасаду.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentalService Сервіс оренди</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentalRepository Репозиторій оренд</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumeRepository Репозиторій костюмів</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">userRepository Репозиторій користувачів</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">RentalFacade(</span>
+            <span class="s1">RentalService rentalService,</span>
+            <span class="s1">RentalRepository rentalRepository,</span>
+            <span class="s1">CostumeRepository costumeRepository,</span>
+            <span class="s1">UserRepository userRepository) {</span>
+        <span class="s0">this</span><span class="s1">.rentalService = rentalService;</span>
+        <span class="s0">this</span><span class="s1">.rentalRepository = rentalRepository;</span>
+        <span class="s0">this</span><span class="s1">.costumeRepository = costumeRepository;</span>
+        <span class="s0">this</span><span class="s1">.userRepository = userRepository;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оформити замовлення та повернути об'єкт передачі даних (DTO).</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">user Користувач</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumes Список костюмів</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">start Дата початку</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">end Дата завершення</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Об'єкт RentalDTO з повною інформацією про оренду</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">RentalDTO checkout(User user, List&lt;Costume&gt; costumes, LocalDate start, LocalDate end) {</span>
+        <span class="s1">Rental rental = rentalService.checkout(user, costumes, start, end);</span>
+        <span class="s0">return </span><span class="s1">mapToDTO(rental, costumes);</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оновити статус оренди за її ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentalId Унікальний ідентифікатор оренди</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">newStatus Новий статус для встановлення</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">updateStatus(UUID rentalId, String newStatus) {</span>
+        <span class="s1">rentalRepository</span>
+                <span class="s1">.findById(rentalId)</span>
+                <span class="s1">.ifPresent(</span>
+                        <span class="s1">rental -&gt; {</span>
+                            <span class="s1">List&lt;Costume&gt; costumes = getCostumesByRentalId(rentalId);</span>
+                            <span class="s1">rentalService.updateRentalStatus(rental, newStatus, costumes);</span>
+                        <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Отримати список костюмів, що входять до конкретної оренди.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentalId Унікальний ідентифікатор оренди</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Список об'єктів Costume</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">List&lt;Costume&gt; getCostumesByRentalId(UUID rentalId) {</span>
+        <span class="s0">return new </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalItemRepository()</span>
+                <span class="s1">.findByRentalId(rentalId).stream()</span>
+                        <span class="s1">.map(item -&gt; costumeRepository.findById(item.getCostumeId()).orElse(</span><span class="s0">null</span><span class="s1">))</span>
+                        <span class="s1">.filter(java.util.Objects::nonNull)</span>
+                        <span class="s1">.collect(Collectors.toList());</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Отримати всі оренди у системі у форматі DTO.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Список усіх RentalDTO</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">List&lt;RentalDTO&gt; getAllRentals() {</span>
+        <span class="s0">return </span><span class="s1">rentalRepository.findAll().stream()</span>
+                <span class="s1">.map(r -&gt; mapToDTO(r, getCostumesByRentalId(r.getId())))</span>
+                <span class="s1">.collect(Collectors.toList());</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Отримати список оренд для конкретного користувача.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">userId Унікальний ідентифікатор користувача</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Список RentalDTO для вказаного користувача</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">List&lt;RentalDTO&gt; getRentalsByUserId(java.util.UUID userId) {</span>
+        <span class="s0">return </span><span class="s1">rentalRepository.findByUserId(userId).stream()</span>
+                <span class="s1">.map(r -&gt; mapToDTO(r, getCostumesByRentalId(r.getId())))</span>
+                <span class="s1">.collect(Collectors.toList());</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private </span><span class="s1">RentalDTO mapToDTO(Rental rental, List&lt;Costume&gt; costumes) {</span>
+        <span class="s1">String userEmail =</span>
+                <span class="s1">userRepository.findById(rental.getUserId()).map(User::getEmail).orElse(</span><span class="s4">&quot;Unknown&quot;</span><span class="s1">);</span>
+
+        <span class="s1">BigDecimal currentPenalty = rental.getPenaltyAmount();</span>
+        <span class="s0">if </span><span class="s1">(currentPenalty.compareTo(BigDecimal.ZERO) == </span><span class="s5">0</span>
+                <span class="s1">&amp;&amp; !</span><span class="s4">&quot;RETURNED&quot;</span><span class="s1">.equals(rental.getStatus())) {</span>
+            <span class="s1">currentPenalty = rentalService.calculatePenalty(rental, costumes);</span>
+        <span class="s1">}</span>
+
+        <span class="s1">BigDecimal totalDeposit = BigDecimal.ZERO;</span>
+        <span class="s0">for </span><span class="s1">(Costume c : costumes) {</span>
+            <span class="s1">totalDeposit =</span>
+                    <span class="s1">totalDeposit.add(</span>
+                            <span class="s1">c.getDepositAmount() != </span><span class="s0">null </span><span class="s1">? c.getDepositAmount() : BigDecimal.ZERO);</span>
+        <span class="s1">}</span>
+
+        <span class="s1">List&lt;String&gt; names = costumes.stream().map(Costume::getName).collect(Collectors.toList());</span>
+
+        <span class="s0">return </span><span class="s1">RentalDTO.builder()</span>
+                <span class="s1">.id(rental.getId())</span>
+                <span class="s1">.userId(rental.getUserId())</span>
+                <span class="s1">.userEmail(userEmail)</span>
+                <span class="s1">.startDate(rental.getStartDate())</span>
+                <span class="s1">.endDate(rental.getEndDate())</span>
+                <span class="s1">.totalPrice(rental.getTotalPrice())</span>
+                <span class="s1">.penaltyAmount(currentPenalty)</span>
+                <span class="s1">.totalDeposit(totalDeposit)</span>
+                <span class="s1">.status(rental.getStatus())</span>
+                <span class="s1">.costumeNames(names)</span>
+                <span class="s1">.build();</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<html>
+<head>
+<title>AdminPanelView.fxml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #080808; font-style: italic;}
+.s1 { color: #174ad4;}
+.s2 { color: #080808;}
+.s3 { color: #067d17;}
+.s4 { color: #0033b3;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+AdminPanelView.fxml</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;?</span><span class="s1">xml version</span><span class="s3">=&quot;1.0&quot; </span><span class="s1">encoding</span><span class="s3">=&quot;UTF-8&quot;</span><span class="s0">?&gt;</span>
+
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.control.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.layout.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">org.kordamp.ikonli.javafx.FontIcon</span><span class="s0">?&gt;</span>
+
+<span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;20.0&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 30; -fx-background-color: -color-bg-default;&quot; </span><span class="s1">xmlns</span><span class="s3">=&quot;http://javafx.com/javafx/22&quot; </span><span class="s1">xmlns:fx</span><span class="s3">=&quot;http://javafx.com/fxml/1&quot; </span><span class="s1">fx:controller</span><span class="s3">=&quot;com.oliinyk.costumes.view.AdminPanelController&quot;</span><span class="s2">&gt;</span>
+    <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;&quot; </span><span class="s1">text</span><span class="s3">=&quot;Панель Адміністратора&quot; </span><span class="s2">/&gt;</span>
+    
+    <span class="s2">&lt;</span><span class="s4">TabPane </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot; </span><span class="s1">tabClosingPolicy</span><span class="s3">=&quot;UNAVAILABLE&quot;</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">Tab </span><span class="s1">fx:id</span><span class="s3">=&quot;dashboardTab&quot; </span><span class="s1">text</span><span class="s3">=&quot;Дашборд&quot;</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">ScrollPane </span><span class="s1">fitToWidth</span><span class="s3">=&quot;true&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-background-color: transparent;&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;30&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 30;&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-size: 20; -fx-font-weight: bold;&quot; </span><span class="s1">text</span><span class="s3">=&quot;Аналітика прокату&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">HBox </span><span class="s1">spacing</span><span class="s3">=&quot;30&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;CENTER&quot;</span><span class="s2">&gt;</span>
+                         <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;card&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 20; -fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-radius: 10;&quot; </span><span class="s1">HBox.hgrow</span><span class="s3">=&quot;ALWAYS&quot;</span><span class="s2">&gt;</span>
+                            <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-weight: bold;&quot; </span><span class="s1">text</span><span class="s3">=&quot;Статуси замовлень&quot; </span><span class="s2">/&gt;</span>
+                            <span class="s2">&lt;</span><span class="s4">javafx.scene.chart.PieChart </span><span class="s1">fx:id</span><span class="s3">=&quot;statusChart&quot; </span><span class="s2">/&gt;</span>
+                         <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+                         <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;card&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 20; -fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-radius: 10;&quot; </span><span class="s1">HBox.hgrow</span><span class="s3">=&quot;ALWAYS&quot;</span><span class="s2">&gt;</span>
+                            <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-weight: bold;&quot; </span><span class="s1">text</span><span class="s3">=&quot;Топ-5 популярних костюмів&quot; </span><span class="s2">/&gt;</span>
+                            <span class="s2">&lt;</span><span class="s4">javafx.scene.chart.BarChart </span><span class="s1">fx:id</span><span class="s3">=&quot;popularityChart&quot;</span><span class="s2">&gt;</span>
+                                <span class="s2">&lt;</span><span class="s4">xAxis</span><span class="s2">&gt;&lt;</span><span class="s4">javafx.scene.chart.CategoryAxis </span><span class="s1">label</span><span class="s3">=&quot;Костюм&quot; </span><span class="s2">/&gt;&lt;/</span><span class="s4">xAxis</span><span class="s2">&gt;</span>
+                                <span class="s2">&lt;</span><span class="s4">yAxis</span><span class="s2">&gt;&lt;</span><span class="s4">javafx.scene.chart.NumberAxis </span><span class="s1">label</span><span class="s3">=&quot;Кількість оренд&quot; </span><span class="s2">/&gt;&lt;/</span><span class="s4">yAxis</span><span class="s2">&gt;</span>
+                            <span class="s2">&lt;/</span><span class="s4">javafx.scene.chart.BarChart</span><span class="s2">&gt;</span>
+                         <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">HBox</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">ScrollPane</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">Tab</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">Tab </span><span class="s1">text</span><span class="s3">=&quot;Костюми&quot;</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 20;&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">HBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;CENTER_LEFT&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">text</span><span class="s3">=&quot;Додати Новий Костюм&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;success&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#onAddCostumeClicked&quot;</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                            <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-plus&quot; </span><span class="s1">iconColor</span><span class="s3">=&quot;white&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">Region </span><span class="s1">HBox.hgrow</span><span class="s3">=&quot;ALWAYS&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">TextField </span><span class="s1">fx:id</span><span class="s3">=&quot;costumeSearchField&quot; </span><span class="s1">promptText</span><span class="s3">=&quot;Пошук костюмів...&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">HBox</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:id</span><span class="s3">=&quot;costumesTable&quot; </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:constant</span><span class="s3">=&quot;CONSTRAINED_RESIZE_POLICY&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">columns</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Назва&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;200&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Опис&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;350&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Ціна (грн/день)&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;120&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Дії&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;180&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">columns</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">TableView</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">Tab</span><span class="s2">&gt;</span>
+        
+        <span class="s2">&lt;</span><span class="s4">Tab </span><span class="s1">text</span><span class="s3">=&quot;Користувачі&quot;</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 20;&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:id</span><span class="s3">=&quot;usersTable&quot; </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:constant</span><span class="s3">=&quot;CONSTRAINED_RESIZE_POLICY&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">columns</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Email&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;300&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Роль&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;120&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Верифікований&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;120&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">columns</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">TableView</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">Tab</span><span class="s2">&gt;</span>
+        
+        <span class="s2">&lt;</span><span class="s4">Tab </span><span class="s1">text</span><span class="s3">=&quot;Оренди&quot;</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 20;&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">HBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;CENTER_LEFT&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">text</span><span class="s3">=&quot;Експорт у CSV&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;accent&quot; </span><span class="s1">onAction</span><span class="s3">=&quot;#onExportRentalsClicked&quot;</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                            <span class="s2">&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-file-export&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">HBox</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:id</span><span class="s3">=&quot;rentalsTable&quot; </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableView </span><span class="s1">fx:constant</span><span class="s3">=&quot;CONSTRAINED_RESIZE_POLICY&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">columnResizePolicy</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">columns</span><span class="s2">&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Користувач&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;250&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Дата Початку&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Дата Кінця&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Статус&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;120&quot; </span><span class="s2">/&gt;</span>
+                        <span class="s2">&lt;</span><span class="s4">TableColumn </span><span class="s1">text</span><span class="s3">=&quot;Сума&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;120&quot; </span><span class="s2">/&gt;</span>
+                    <span class="s2">&lt;/</span><span class="s4">columns</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">TableView</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">Tab</span><span class="s2">&gt;</span>
+    <span class="s2">&lt;/</span><span class="s4">TabPane</span><span class="s2">&gt;</span>
+<span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+</pre>
+</body>
+</html>

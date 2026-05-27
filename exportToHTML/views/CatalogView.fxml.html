@@ -1,0 +1,61 @@
+<html>
+<head>
+<title>CatalogView.fxml</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #080808; font-style: italic;}
+.s1 { color: #174ad4;}
+.s2 { color: #080808;}
+.s3 { color: #067d17;}
+.s4 { color: #0033b3;}
+.s5 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+CatalogView.fxml</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;?</span><span class="s1">xml version</span><span class="s3">=&quot;1.0&quot; </span><span class="s1">encoding</span><span class="s3">=&quot;UTF-8&quot;</span><span class="s0">?&gt;</span>
+
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.control.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">javafx.scene.layout.*</span><span class="s0">?&gt;</span>
+<span class="s0">&lt;?</span><span class="s1">import </span><span class="s3">org.kordamp.ikonli.javafx.FontIcon</span><span class="s0">?&gt;</span>
+
+<span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;20.0&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 30; -fx-background-color: -color-bg-default;&quot; </span><span class="s1">xmlns</span><span class="s3">=&quot;http://javafx.com/javafx/22&quot; </span><span class="s1">xmlns:fx</span><span class="s3">=&quot;http://javafx.com/fxml/1&quot; </span><span class="s1">fx:controller</span><span class="s3">=&quot;com.oliinyk.costumes.view.CatalogController&quot;</span><span class="s2">&gt;</span>
+    <span class="s5">&lt;!-- Візуальний баг 4: Шапка каталогу (VBox замість HBox для запобігання обрізанню) --&gt;</span>
+    <span class="s2">&lt;</span><span class="s4">VBox </span><span class="s1">spacing</span><span class="s3">=&quot;15&quot;</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;&quot; </span><span class="s1">text</span><span class="s3">=&quot;Каталог Костюмів&quot; </span><span class="s2">/&gt;</span>
+        
+        <span class="s2">&lt;</span><span class="s4">HBox </span><span class="s1">spacing</span><span class="s3">=&quot;20&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;CENTER_LEFT&quot;</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;</span><span class="s4">HBox </span><span class="s1">spacing</span><span class="s3">=&quot;15&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;CENTER_LEFT&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">Label </span><span class="s1">text</span><span class="s3">=&quot;Період оренди:&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-font-weight: bold;&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">DatePicker </span><span class="s1">fx:id</span><span class="s3">=&quot;startDatePicker&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s1">promptText</span><span class="s3">=&quot;Від&quot; </span><span class="s2">/&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">DatePicker </span><span class="s1">fx:id</span><span class="s3">=&quot;endDatePicker&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;150&quot; </span><span class="s1">promptText</span><span class="s3">=&quot;До&quot; </span><span class="s2">/&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">HBox</span><span class="s2">&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">Region </span><span class="s1">HBox.hgrow</span><span class="s3">=&quot;ALWAYS&quot; </span><span class="s2">/&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">HBox </span><span class="s1">spacing</span><span class="s3">=&quot;10&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;CENTER_LEFT&quot;</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;gridModeBtn&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;button-icon&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-th&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;18&quot; </span><span class="s2">/&gt;&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">tooltip</span><span class="s2">&gt;&lt;</span><span class="s4">Tooltip </span><span class="s1">text</span><span class="s3">=&quot;Сітка&quot; </span><span class="s2">/&gt;&lt;/</span><span class="s4">tooltip</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;</span><span class="s4">Button </span><span class="s1">fx:id</span><span class="s3">=&quot;listModeBtn&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;button-icon&quot;</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">graphic</span><span class="s2">&gt;&lt;</span><span class="s4">FontIcon </span><span class="s1">iconLiteral</span><span class="s3">=&quot;fas-list&quot; </span><span class="s1">iconSize</span><span class="s3">=&quot;18&quot; </span><span class="s2">/&gt;&lt;/</span><span class="s4">graphic</span><span class="s2">&gt;</span>
+                    <span class="s2">&lt;</span><span class="s4">tooltip</span><span class="s2">&gt;&lt;</span><span class="s4">Tooltip </span><span class="s1">text</span><span class="s3">=&quot;Список&quot; </span><span class="s2">/&gt;&lt;/</span><span class="s4">tooltip</span><span class="s2">&gt;</span>
+                <span class="s2">&lt;/</span><span class="s4">Button</span><span class="s2">&gt;</span>
+            <span class="s2">&lt;/</span><span class="s4">HBox</span><span class="s2">&gt;</span>
+            
+            <span class="s2">&lt;</span><span class="s4">TextField </span><span class="s1">fx:id</span><span class="s3">=&quot;searchField&quot; </span><span class="s1">promptText</span><span class="s3">=&quot;Пошук за назвою...&quot; </span><span class="s1">prefWidth</span><span class="s3">=&quot;250&quot; </span><span class="s2">/&gt;</span>
+        <span class="s2">&lt;/</span><span class="s4">HBox</span><span class="s2">&gt;</span>
+    <span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+
+    <span class="s2">&lt;</span><span class="s4">ScrollPane </span><span class="s1">fitToWidth</span><span class="s3">=&quot;true&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-background-color: transparent;&quot; </span><span class="s1">VBox.vgrow</span><span class="s3">=&quot;ALWAYS&quot; </span><span class="s1">styleClass</span><span class="s3">=&quot;edge-to-edge&quot;</span><span class="s2">&gt;</span>
+        <span class="s2">&lt;</span><span class="s4">TilePane </span><span class="s1">fx:id</span><span class="s3">=&quot;costumesGrid&quot; </span><span class="s1">hgap</span><span class="s3">=&quot;25&quot; </span><span class="s1">vgap</span><span class="s3">=&quot;25&quot; </span><span class="s1">prefColumns</span><span class="s3">=&quot;3&quot; </span><span class="s1">alignment</span><span class="s3">=&quot;TOP_CENTER&quot; </span><span class="s1">style</span><span class="s3">=&quot;-fx-padding: 10;&quot; </span><span class="s2">/&gt;</span>
+    <span class="s2">&lt;/</span><span class="s4">ScrollPane</span><span class="s2">&gt;</span>
+<span class="s2">&lt;/</span><span class="s4">VBox</span><span class="s2">&gt;</span>
+</pre>
+</body>
+</html>

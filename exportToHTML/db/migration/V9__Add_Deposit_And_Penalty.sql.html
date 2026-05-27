@@ -1,0 +1,30 @@
+<html>
+<head>
+<title>V9__Add_Deposit_And_Penalty.sql</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #8c8c8c; font-style: italic;}
+.s1 { color: #080808;}
+.s2 { color: #0033b3;}
+.s3 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+V9__Add_Deposit_And_Penalty.sql</font>
+</center></td></tr></table>
+<pre><span class="s0">-- Додавання застави для костюмів та штрафів для оренд</span>
+<span class="s0">-- Вимога розділу: Блок 2 (Фінанси)</span>
+
+<span class="s2">ALTER TABLE </span><span class="s1">costumes </span><span class="s2">ADD COLUMN </span><span class="s1">deposit_amount </span><span class="s2">DECIMAL</span><span class="s1">(</span><span class="s3">10</span><span class="s1">, </span><span class="s3">2</span><span class="s1">) </span><span class="s2">NOT NULL DEFAULT </span><span class="s3">0.00</span><span class="s1">;</span>
+
+<span class="s0">-- Додавання штрафу до таблиці оренд</span>
+<span class="s2">ALTER TABLE </span><span class="s1">rentals </span><span class="s2">ADD COLUMN </span><span class="s1">penalty_amount </span><span class="s2">DECIMAL</span><span class="s1">(</span><span class="s3">10</span><span class="s1">, </span><span class="s3">2</span><span class="s1">) </span><span class="s2">NOT NULL DEFAULT </span><span class="s3">0.00</span><span class="s1">;</span>
+
+<span class="s0">-- Оновлення існуючих даних (приблизна застава - 50% від денної вартості * 2 як приклад)</span>
+<span class="s2">UPDATE </span><span class="s1">costumes </span><span class="s2">SET </span><span class="s1">deposit_amount = price_per_day * </span><span class="s3">2</span><span class="s1">;</span>
+</pre>
+</body>
+</html>

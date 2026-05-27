@@ -1,0 +1,49 @@
+<html>
+<head>
+<title>module-info.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #080808;}
+.s1 { color: #0033b3;}
+.s2 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+module-info.java</font>
+</center></td></tr></table>
+<pre><span class="s0">module com.oliinyk.costumes.carnivalrentalapp {</span>
+    <span class="s0">requires transitive javafx.controls;</span>
+    <span class="s0">requires transitive javafx.graphics;</span>
+    <span class="s0">requires javafx.fxml;</span>
+    <span class="s0">requires </span><span class="s1">static </span><span class="s0">lombok;</span>
+    <span class="s0">requires transitive java.sql;</span>
+    <span class="s0">requires com.zaxxer.hikari;</span>
+    <span class="s0">requires flyway.core;</span>
+    <span class="s0">requires jbcrypt;</span>
+    <span class="s0">requires atlantafx.base;</span>
+    <span class="s2">// Ikonli: базова бібліотека + FontAwesome 5 набір іконок</span>
+    <span class="s0">requires org.kordamp.ikonli.core;</span>
+    <span class="s0">requires org.kordamp.ikonli.javafx;</span>
+    <span class="s0">requires org.kordamp.ikonli.fontawesome5;</span>
+
+    <span class="s0">exports com.oliinyk.costumes.model;</span>
+    <span class="s0">exports com.oliinyk.costumes.repository;</span>
+    <span class="s0">exports com.oliinyk.costumes.service;</span>
+    <span class="s0">exports com.oliinyk.costumes.infrastructure;</span>
+    
+    <span class="s2">// Експорт та відкриття пакетів для JavaFX</span>
+    <span class="s0">exports com.oliinyk.costumes.view;</span>
+    <span class="s0">opens com.oliinyk.costumes.view to javafx.fxml;</span>
+    <span class="s0">exports com.oliinyk.costumes.viewmodel;</span>
+    
+    <span class="s2">// FlywayMarker.java робить db.migration реальним Java-пакетом.</span>
+    <span class="s2">// Відкриваємо його для Flyway як fallback для classpath-сканування (запуск із JAR).</span>
+    <span class="s0">opens db.migration to flyway.core;</span>
+
+    <span class="s0">exports com.oliinyk.costumes;</span>
+<span class="s0">}</span></pre>
+</body>
+</html>

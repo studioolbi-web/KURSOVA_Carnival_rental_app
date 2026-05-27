@@ -1,0 +1,125 @@
+<html>
+<head>
+<title>RegisterViewModel.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #8c8c8c; font-style: italic;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RegisterViewModel.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.viewmodel;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.AuthService;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.BooleanProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleBooleanProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.SimpleStringProperty;</span>
+<span class="s0">import </span><span class="s1">javafx.beans.property.StringProperty;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* ViewModel для вікна реєстрації та верифікації користувачів. Керує станом реєстраційної форми та</span>
+ <span class="s2">* взаємодіє з сервісом аутентифікації.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">RegisterViewModel {</span>
+    <span class="s0">private final </span><span class="s1">AuthService authService;</span>
+
+    <span class="s0">private final </span><span class="s1">StringProperty email = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty password = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty code = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">StringProperty errorMessage = </span><span class="s0">new </span><span class="s1">SimpleStringProperty(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">BooleanProperty registrationSuccessful = </span><span class="s0">new </span><span class="s1">SimpleBooleanProperty(</span><span class="s0">false</span><span class="s1">);</span>
+    <span class="s0">private final </span><span class="s1">BooleanProperty verificationSuccessful = </span><span class="s0">new </span><span class="s1">SimpleBooleanProperty(</span><span class="s0">false</span><span class="s1">);</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор ViewModel для реєстрації.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s4">@param </span><span class="s2">authService сервіс аутентифікації для реєстрації та верифікації</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">RegisterViewModel(AuthService authService) {</span>
+        <span class="s0">this</span><span class="s1">.authService = authService;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">властивість для поля електронної пошти</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty emailProperty() {</span>
+        <span class="s0">return </span><span class="s1">email;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">властивість для поля пароля</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty passwordProperty() {</span>
+        <span class="s0">return </span><span class="s1">password;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">властивість для поля коду верифікації</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty codeProperty() {</span>
+        <span class="s0">return </span><span class="s1">code;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">властивість для повідомлення про помилку</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">StringProperty errorMessageProperty() {</span>
+        <span class="s0">return </span><span class="s1">errorMessage;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">властивість успішності реєстрації</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BooleanProperty registrationSuccessfulProperty() {</span>
+        <span class="s0">return </span><span class="s1">registrationSuccessful;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* </span><span class="s4">@return </span><span class="s2">властивість успішності верифікації</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BooleanProperty verificationSuccessfulProperty() {</span>
+        <span class="s0">return </span><span class="s1">verificationSuccessful;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/** Спроба зареєструвати нового користувача. Валідує дані та викликає сервіс реєстрації. */</span>
+    <span class="s0">public void </span><span class="s1">attemptRegister() {</span>
+        <span class="s0">if </span><span class="s1">(email.get() == </span><span class="s0">null</span>
+                <span class="s1">|| email.get().trim().isEmpty()</span>
+                <span class="s1">|| password.get() == </span><span class="s0">null</span>
+                <span class="s1">|| password.get().isEmpty()) {</span>
+            <span class="s1">errorMessage.set(</span><span class="s3">&quot;Введіть email та пароль.&quot;</span><span class="s1">);</span>
+            <span class="s0">return</span><span class="s1">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">try </span><span class="s1">{</span>
+            <span class="s1">authService.registerUser(email.get(), password.get(), </span><span class="s3">&quot;USER&quot;</span><span class="s1">);</span>
+            <span class="s1">errorMessage.set(</span><span class="s3">&quot;&quot;</span><span class="s1">);</span>
+            <span class="s1">registrationSuccessful.set(</span><span class="s0">true</span><span class="s1">);</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(IllegalArgumentException e) {</span>
+            <span class="s1">errorMessage.set(e.getMessage());</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(Exception e) {</span>
+            <span class="s1">errorMessage.set(</span><span class="s3">&quot;Помилка реєстрації: &quot; </span><span class="s1">+ e.getMessage());</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/** Спроба верифікувати акаунт за допомогою коду. */</span>
+    <span class="s0">public void </span><span class="s1">attemptVerify() {</span>
+        <span class="s0">if </span><span class="s1">(authService.verifyUser(email.get(), code.get())) {</span>
+            <span class="s1">errorMessage.set(</span><span class="s3">&quot;Успішно! Тепер увійдіть.&quot;</span><span class="s1">);</span>
+            <span class="s1">verificationSuccessful.set(</span><span class="s0">true</span><span class="s1">);</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s1">errorMessage.set(</span><span class="s3">&quot;Невірний код.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

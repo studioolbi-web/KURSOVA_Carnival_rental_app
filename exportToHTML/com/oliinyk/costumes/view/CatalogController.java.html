@@ -1,0 +1,249 @@
+<html>
+<head>
+<title>CatalogController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #1750eb;}
+.s4 { color: #067d17;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+CatalogController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcRentalRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.service.SessionManager;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.viewmodel.CatalogViewModel;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.stream.Collectors;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.geometry.Insets;</span>
+<span class="s0">import </span><span class="s1">javafx.geometry.Pos;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.*;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.image.Image;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.image.ImageView;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.TilePane;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.VBox;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* Контролер каталогу костюмів. Відповідає за відображення списку доступних костюмів та їх</span>
+ <span class="s2">* фільтрацію.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">CatalogController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TilePane costumesGrid;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField searchField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">DatePicker startDatePicker;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">DatePicker endDatePicker;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">Button gridModeBtn;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">Button listModeBtn;</span>
+
+    <span class="s0">private </span><span class="s1">CatalogViewModel viewModel;</span>
+    <span class="s0">private final </span><span class="s1">JdbcRentalRepository rentalRepo = </span><span class="s0">new </span><span class="s1">JdbcRentalRepository();</span>
+
+    <span class="s2">/** Встановлює ViewModel та ініціалізує дані. */</span>
+    <span class="s0">public void </span><span class="s1">setViewModel(CatalogViewModel viewModel) {</span>
+        <span class="s0">this</span><span class="s1">.viewModel = viewModel;</span>
+        <span class="s1">setupUI();</span>
+        <span class="s1">setupSearch();</span>
+        <span class="s1">setupViewModeListener();</span>
+        <span class="s1">populateGrid(viewModel.getCostumes());</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupUI() {</span>
+        <span class="s1">startDatePicker.setValue(LocalDate.now());</span>
+        <span class="s1">endDatePicker.setValue(LocalDate.now().plusDays(</span><span class="s3">1</span><span class="s1">));</span>
+
+        <span class="s2">// Налаштування обмежень для дат (Вимога UI/UX)</span>
+        <span class="s1">startDatePicker.setDayCellFactory(</span>
+                <span class="s1">picker -&gt;</span>
+                        <span class="s0">new </span><span class="s1">DateCell() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">public void </span><span class="s1">updateItem(LocalDate date, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(date, empty);</span>
+                                <span class="s1">setDisable(empty || date.isBefore(LocalDate.now()));</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">endDatePicker.setDayCellFactory(</span>
+                <span class="s1">picker -&gt;</span>
+                        <span class="s0">new </span><span class="s1">DateCell() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">public void </span><span class="s1">updateItem(LocalDate date, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(date, empty);</span>
+                                <span class="s1">setDisable(</span>
+                                        <span class="s1">empty</span>
+                                                <span class="s1">|| date.isBefore(</span>
+                                                        <span class="s1">startDatePicker.getValue().plusDays(</span><span class="s3">1</span><span class="s1">)));</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">startDatePicker</span>
+                <span class="s1">.valueProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(obs, old, newVal) -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(newVal != </span><span class="s0">null</span>
+                                    <span class="s1">&amp;&amp; (endDatePicker.getValue() == </span><span class="s0">null</span>
+                                            <span class="s1">|| endDatePicker</span>
+                                                    <span class="s1">.getValue()</span>
+                                                    <span class="s1">.isBefore(newVal.plusDays(</span><span class="s3">1</span><span class="s1">)))) {</span>
+                                <span class="s1">endDatePicker.setValue(newVal.plusDays(</span><span class="s3">1</span><span class="s1">));</span>
+                            <span class="s1">}</span>
+                            <span class="s1">refreshCatalog();</span>
+                        <span class="s1">});</span>
+        <span class="s1">endDatePicker.valueProperty().addListener((obs, old, newVal) -&gt; refreshCatalog());</span>
+
+        <span class="s1">gridModeBtn.setOnAction(e -&gt; SessionManager.getInstance().viewModeProperty().set(</span><span class="s4">&quot;GRID&quot;</span><span class="s1">));</span>
+        <span class="s1">listModeBtn.setOnAction(e -&gt; SessionManager.getInstance().viewModeProperty().set(</span><span class="s4">&quot;LIST&quot;</span><span class="s1">));</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">refreshCatalog() {</span>
+        <span class="s1">populateGrid(viewModel.getCostumes());</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupViewModeListener() {</span>
+        <span class="s1">SessionManager.getInstance()</span>
+                <span class="s1">.viewModeProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(obs, oldVal, newVal) -&gt; {</span>
+                            <span class="s1">populateGrid(viewModel.getCostumes());</span>
+                        <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupSearch() {</span>
+        <span class="s2">// Реалізація динамічного пошуку (Вимога 5.2)</span>
+        <span class="s1">searchField</span>
+                <span class="s1">.textProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(obs, oldText, newText) -&gt; {</span>
+                            <span class="s1">populateGrid(viewModel.getCostumes());</span>
+                        <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">populateGrid(List&lt;Costume&gt; costumes) {</span>
+        <span class="s1">costumesGrid.getChildren().clear();</span>
+        <span class="s1">String viewMode = SessionManager.getInstance().viewModeProperty().get();</span>
+
+        <span class="s0">if </span><span class="s1">(</span><span class="s4">&quot;LIST&quot;</span><span class="s1">.equals(viewMode)) {</span>
+            <span class="s1">costumesGrid.setPrefColumns(</span><span class="s3">1</span><span class="s1">);</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s1">costumesGrid.setPrefColumns(</span><span class="s3">3</span><span class="s1">);</span>
+        <span class="s1">}</span>
+
+        <span class="s2">// Фільтрація за пошуком</span>
+        <span class="s1">String filter = searchField.getText();</span>
+        <span class="s1">List&lt;Costume&gt; filtered =</span>
+                <span class="s1">costumes.stream()</span>
+                        <span class="s1">.filter(</span>
+                                <span class="s1">c -&gt;</span>
+                                        <span class="s1">filter == </span><span class="s0">null</span>
+                                                <span class="s1">|| filter.isEmpty()</span>
+                                                <span class="s1">|| c.getName()</span>
+                                                        <span class="s1">.toLowerCase()</span>
+                                                        <span class="s1">.contains(filter.toLowerCase()))</span>
+                        <span class="s1">.collect(Collectors.toList());</span>
+
+        <span class="s0">for </span><span class="s1">(Costume costume : filtered) {</span>
+            <span class="s1">costumesGrid.getChildren().add(createCostumeCard(costume, viewMode));</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private </span><span class="s1">VBox createCostumeCard(Costume costume, String viewMode) {</span>
+        <span class="s1">VBox card = </span><span class="s0">new </span><span class="s1">VBox(</span><span class="s3">15</span><span class="s1">);</span>
+        <span class="s1">card.setPadding(</span><span class="s0">new </span><span class="s1">Insets(</span><span class="s3">20</span><span class="s1">));</span>
+        <span class="s1">card.getStyleClass().add(</span><span class="s4">&quot;card&quot;</span><span class="s1">);</span>
+
+        <span class="s2">// Перевірка доступності</span>
+        <span class="s0">boolean </span><span class="s1">isAvailable = </span><span class="s0">true</span><span class="s1">;</span>
+        <span class="s0">if </span><span class="s1">(startDatePicker.getValue() != </span><span class="s0">null </span><span class="s1">&amp;&amp; endDatePicker.getValue() != </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s1">isAvailable =</span>
+                    <span class="s1">rentalRepo.isCostumeAvailable(</span>
+                            <span class="s1">costume.getId(), startDatePicker.getValue(), endDatePicker.getValue());</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(</span><span class="s4">&quot;LIST&quot;</span><span class="s1">.equals(viewMode)) {</span>
+            <span class="s1">card.setStyle(</span>
+                    <span class="s4">&quot;-fx-background-color: -color-bg-subtle; -fx-background-radius: 12; -fx-border-color: -color-border-default; -fx-border-radius: 12; -fx-border-width: 1; -fx-pref-width: 800; -fx-pref-height: 120;&quot;</span><span class="s1">);</span>
+            <span class="s1">card.setAlignment(Pos.CENTER_LEFT);</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s1">card.setStyle(</span>
+                    <span class="s4">&quot;-fx-background-color: -color-bg-subtle; -fx-background-radius: 12; -fx-border-color: -color-border-default; -fx-border-radius: 12; -fx-border-width: 1; -fx-pref-width: 280; -fx-pref-height: 250;&quot;</span><span class="s1">);</span>
+            <span class="s1">card.setAlignment(Pos.CENTER);</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(!isAvailable) {</span>
+            <span class="s1">card.setOpacity(</span><span class="s3">0.6</span><span class="s1">);</span>
+        <span class="s1">}</span>
+
+        <span class="s1">Label nameLabel = </span><span class="s0">new </span><span class="s1">Label(costume.getName());</span>
+        <span class="s1">nameLabel.setStyle(</span>
+                <span class="s4">&quot;-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;&quot;</span><span class="s1">);</span>
+
+        <span class="s1">ImageView imageView = </span><span class="s0">new </span><span class="s1">ImageView();</span>
+        <span class="s0">if </span><span class="s1">(costume.getImagePath() != </span><span class="s0">null </span><span class="s1">&amp;&amp; !costume.getImagePath().isEmpty()) {</span>
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s1">String path = costume.getImagePath();</span>
+                <span class="s2">// 1. Спробувати завантажити як ресурс з classpath</span>
+                <span class="s1">java.net.URL resourceUrl = getClass().getResource(path);</span>
+                <span class="s0">if </span><span class="s1">(resourceUrl != </span><span class="s0">null</span><span class="s1">) {</span>
+                    <span class="s1">imageView.setImage(</span><span class="s0">new </span><span class="s1">Image(resourceUrl.toExternalForm(), </span><span class="s0">true</span><span class="s1">));</span>
+                <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+                    <span class="s2">// 2. Спробувати завантажити як файл із файлової системи</span>
+                    <span class="s1">java.io.File file = </span><span class="s0">new </span><span class="s1">java.io.File(path);</span>
+                    <span class="s0">if </span><span class="s1">(file.exists()) {</span>
+                        <span class="s1">imageView.setImage(</span><span class="s0">new </span><span class="s1">Image(file.toURI().toString(), </span><span class="s0">true</span><span class="s1">));</span>
+                    <span class="s1">}</span>
+                <span class="s1">}</span>
+
+                <span class="s1">imageView.setFitWidth(</span><span class="s4">&quot;LIST&quot;</span><span class="s1">.equals(viewMode) ? </span><span class="s3">80 </span><span class="s1">: </span><span class="s3">150</span><span class="s1">);</span>
+                <span class="s1">imageView.setFitHeight(</span><span class="s4">&quot;LIST&quot;</span><span class="s1">.equals(viewMode) ? </span><span class="s3">80 </span><span class="s1">: </span><span class="s3">150</span><span class="s1">);</span>
+                <span class="s1">imageView.setPreserveRatio(</span><span class="s0">true</span><span class="s1">);</span>
+            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(Exception ex) {</span>
+                <span class="s2">// Логування помилки завантаження зображення</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+
+        <span class="s1">Label priceLabel = </span><span class="s0">new </span><span class="s1">Label(String.format(</span><span class="s4">&quot;%.2f&quot;</span><span class="s1">, costume.getPricePerDay()) + </span><span class="s4">&quot; грн/день&quot;</span><span class="s1">);</span>
+        <span class="s1">priceLabel.setStyle(</span>
+                <span class="s4">&quot;-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: -color-accent-emphasis;&quot;</span><span class="s1">);</span>
+
+        <span class="s1">Button addToCartBtn = </span><span class="s0">new </span><span class="s1">Button(isAvailable ? </span><span class="s4">&quot;Додати в кошик&quot; </span><span class="s1">: </span><span class="s4">&quot;Недоступно&quot;</span><span class="s1">);</span>
+        <span class="s1">addToCartBtn.getStyleClass().add(isAvailable ? </span><span class="s4">&quot;accent&quot; </span><span class="s1">: </span><span class="s4">&quot;danger&quot;</span><span class="s1">);</span>
+        <span class="s1">addToCartBtn.setDisable(!isAvailable);</span>
+        <span class="s1">addToCartBtn.setMaxWidth(Double.MAX_VALUE);</span>
+        <span class="s1">addToCartBtn.setOnAction(</span>
+                <span class="s1">e -&gt; {</span>
+                    <span class="s1">viewModel.addToCart(costume);</span>
+                    <span class="s1">addToCartBtn.setText(</span><span class="s4">&quot;Додано!&quot;</span><span class="s1">);</span>
+                    <span class="s1">addToCartBtn.getStyleClass().remove(</span><span class="s4">&quot;accent&quot;</span><span class="s1">);</span>
+                    <span class="s1">addToCartBtn.getStyleClass().add(</span><span class="s4">&quot;success&quot;</span><span class="s1">);</span>
+                    <span class="s1">addToCartBtn.setDisable(</span><span class="s0">true</span><span class="s1">);</span>
+                <span class="s1">});</span>
+
+        <span class="s0">if </span><span class="s1">(</span><span class="s4">&quot;LIST&quot;</span><span class="s1">.equals(viewMode)) {</span>
+            <span class="s1">javafx.scene.layout.HBox hBox =</span>
+                    <span class="s0">new </span><span class="s1">javafx.scene.layout.HBox(</span>
+                            <span class="s3">20</span><span class="s1">, imageView, nameLabel, priceLabel, addToCartBtn);</span>
+            <span class="s1">hBox.setAlignment(Pos.CENTER_LEFT);</span>
+            <span class="s1">javafx.scene.layout.HBox.setHgrow(nameLabel, javafx.scene.layout.Priority.ALWAYS);</span>
+            <span class="s1">nameLabel.setMaxWidth(Double.MAX_VALUE);</span>
+            <span class="s1">card.getChildren().add(hBox);</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s1">card.getChildren().addAll(imageView, nameLabel, priceLabel, addToCartBtn);</span>
+        <span class="s1">}</span>
+
+        <span class="s0">return </span><span class="s1">card;</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

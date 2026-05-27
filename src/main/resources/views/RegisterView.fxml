@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox alignment="CENTER" spacing="20.0" style="-fx-padding: 40; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.RegisterController">
+    <Label style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Реєстрація" />
+
+    <VBox fx:id="registerPane" spacing="15" maxWidth="300">
+        <TextField fx:id="emailField" promptText="Email" />
+        <PasswordField fx:id="passwordField" promptText="Пароль" />
+        <Button fx:id="registerButton" maxWidth="Infinity" styleClass="accent" text="Зареєструватись" onAction="#handleRegister">
+            <graphic>
+                <FontIcon iconLiteral="fas-user-plus" />
+            </graphic>
+        </Button>
+        <Button text="Назад до входу" maxWidth="Infinity" styleClass="flat" onAction="#navigateBack" />
+    </VBox>
+
+    <VBox fx:id="verifyPane" spacing="15" maxWidth="300" visible="false" managed="false">
+        <Label text="Код відправлено на пошту (див. консоль)!" style="-fx-text-fill: -color-success-fg;" wrapText="true" />
+        <TextField fx:id="codeField" promptText="Введіть 6-значний код" />
+        <Button maxWidth="Infinity" styleClass="success" text="Підтвердити" onAction="#handleVerify" />
+        <Button text="Скасувати" maxWidth="Infinity" styleClass="flat" onAction="#navigateBack" />
+    </VBox>
+
+    <Label fx:id="errorLabel" style="-fx-text-fill: -color-danger-fg; -fx-font-size: 14;" wrapText="true" />
+</VBox>

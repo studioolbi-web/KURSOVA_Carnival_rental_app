@@ -1,0 +1,195 @@
+<html>
+<head>
+<title>RentalService.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+RentalService.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.service;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.infrastructure.DatabaseManager;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Rental;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.RentalItem;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.User;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.RentalItemRepository;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.RentalRepository;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.sql.Connection;</span>
+<span class="s0">import </span><span class="s1">java.sql.SQLException;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.time.temporal.ChronoUnit;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/** Сервіс для управління процесом оренди костюмів. Забезпечує бізнес-логіку та транзакційність. */</span>
+<span class="s0">public class </span><span class="s1">RentalService {</span>
+
+    <span class="s0">private final </span><span class="s1">RentalRepository rentalRepository;</span>
+    <span class="s0">private final </span><span class="s1">RentalItemRepository rentalItemRepository;</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Конструктор для створення екземпляра сервісу оренди.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentalRepository Репозиторій для роботи з орендами</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rentalItemRepository Репозиторій для роботи з елементами оренди</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">RentalService(</span>
+            <span class="s1">RentalRepository rentalRepository, RentalItemRepository rentalItemRepository) {</span>
+        <span class="s0">this</span><span class="s1">.rentalRepository = rentalRepository;</span>
+        <span class="s0">this</span><span class="s1">.rentalItemRepository = rentalItemRepository;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оформлення нового замовлення (Checkout). Використовує транзакцію для збереження інформації</span>
+     <span class="s2">* про оренду та її елементи.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">user Користувач, який оформлює замовлення</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumes Список костюмів для оренди</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">startDate Дата початку оренди</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">endDate Дата закінчення оренди</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Об'єкт створеної оренди</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">IllegalArgumentException якщо дані некоректні або кошик порожній</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">IllegalStateException якщо один з костюмів недоступний на вказані дати</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException при помилках роботи з базою даних</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">Rental checkout(</span>
+            <span class="s1">User user, List&lt;Costume&gt; costumes, LocalDate startDate, LocalDate endDate) {</span>
+        <span class="s2">// 1. Бізнес-валідація</span>
+        <span class="s1">validateRentalDates(startDate, endDate);</span>
+        <span class="s0">if </span><span class="s1">(costumes == </span><span class="s0">null </span><span class="s1">|| costumes.isEmpty()) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalArgumentException(</span><span class="s4">&quot;Кошик порожній.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+
+        <span class="s2">// Перевірка доступності кожного костюма</span>
+        <span class="s0">for </span><span class="s1">(Costume costume : costumes) {</span>
+            <span class="s0">if </span><span class="s1">(!rentalRepository.isCostumeAvailable(costume.getId(), startDate, endDate)) {</span>
+                <span class="s0">throw new </span><span class="s1">IllegalStateException(</span>
+                        <span class="s4">&quot;Костюм '&quot; </span><span class="s1">+ costume.getName() + </span><span class="s4">&quot;' вже орендований на ці дати.&quot;</span><span class="s1">);</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+
+        <span class="s0">long </span><span class="s1">days = ChronoUnit.DAYS.between(startDate, endDate);</span>
+        <span class="s0">if </span><span class="s1">(days == </span><span class="s5">0</span><span class="s1">) days = </span><span class="s5">1</span><span class="s1">;</span>
+
+        <span class="s2">// Використання нової логіки розрахунку з BasketService (Блок 2)</span>
+        <span class="s1">BasketService basketService = BasketService.getInstance();</span>
+        <span class="s1">BigDecimal rentalPrice = basketService.calculateRentalTotal(days);</span>
+        <span class="s1">BigDecimal totalDeposit = basketService.calculateTotalDeposit();</span>
+
+        <span class="s2">// Загальна сума до сплати при оформленні</span>
+        <span class="s1">BigDecimal finalPrice = rentalPrice.add(totalDeposit);</span>
+
+        <span class="s1">Rental rental =</span>
+                <span class="s1">Rental.builder()</span>
+                        <span class="s1">.id(UUID.randomUUID())</span>
+                        <span class="s1">.userId(user.getId())</span>
+                        <span class="s1">.startDate(startDate)</span>
+                        <span class="s1">.endDate(endDate)</span>
+                        <span class="s1">.totalPrice(finalPrice)</span>
+                        <span class="s1">.penaltyAmount(BigDecimal.ZERO)</span>
+                        <span class="s1">.status(</span><span class="s4">&quot;RESERVED&quot;</span><span class="s1">) </span><span class="s2">// Початковий статус за новою схемою</span>
+                        <span class="s1">.build();</span>
+
+        <span class="s2">// 2. Виконання транзакції (Вимога розділу 3.4 - чистий JDBC)</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection()) {</span>
+            <span class="s1">conn.setAutoCommit(</span><span class="s0">false</span><span class="s1">); </span><span class="s2">// Початок транзакції</span>
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s2">// Використання репозиторіїв у межах однієї транзакції</span>
+                <span class="s1">rentalRepository.save(rental, conn);</span>
+
+                <span class="s0">for </span><span class="s1">(Costume costume : costumes) {</span>
+                    <span class="s1">RentalItem item =</span>
+                            <span class="s1">RentalItem.builder()</span>
+                                    <span class="s1">.rentalId(rental.getId())</span>
+                                    <span class="s1">.costumeId(costume.getId())</span>
+                                    <span class="s1">.priceAtRental(costume.getPricePerDay())</span>
+                                    <span class="s1">.build();</span>
+                    <span class="s1">rentalItemRepository.save(item, conn);</span>
+                <span class="s1">}</span>
+
+                <span class="s1">conn.commit(); </span><span class="s2">// Підтвердження транзакції</span>
+                <span class="s0">return </span><span class="s1">rental;</span>
+            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(Exception e) {</span>
+                <span class="s1">conn.rollback(); </span><span class="s2">// Відкат транзакції у разі помилки</span>
+                <span class="s0">throw new </span><span class="s1">RuntimeException(</span>
+                        <span class="s4">&quot;Помилка при оформленні оренди. Тразакцію скасовано.&quot;</span><span class="s1">, e);</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка з'єднання з базою даних&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Розрахувати штраф за прострочення оренди.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rental Об'єкт оренди</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumes Список костюмів у цій оренді</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Сума нарахованого штрафу</span>
+     <span class="s2">*/</span>
+    <span class="s0">public </span><span class="s1">BigDecimal calculatePenalty(Rental rental, List&lt;Costume&gt; costumes) {</span>
+        <span class="s0">if </span><span class="s1">(rental.getEndDate().isAfter(LocalDate.now())) {</span>
+            <span class="s0">return </span><span class="s1">BigDecimal.ZERO;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">long </span><span class="s1">overdueDays = ChronoUnit.DAYS.between(rental.getEndDate(), LocalDate.now());</span>
+        <span class="s0">if </span><span class="s1">(overdueDays &lt;= </span><span class="s5">0</span><span class="s1">) </span><span class="s0">return </span><span class="s1">BigDecimal.ZERO;</span>
+
+        <span class="s1">BigDecimal dailyRate = BigDecimal.ZERO;</span>
+        <span class="s0">for </span><span class="s1">(Costume c : costumes) {</span>
+            <span class="s1">dailyRate = dailyRate.add(c.getPricePerDay());</span>
+        <span class="s1">}</span>
+
+        <span class="s0">return </span><span class="s1">dailyRate.multiply(BigDecimal.valueOf(overdueDays));</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оновлення статусу оренди з автоматичною перевіркою прострочки та нарахуванням штрафу.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rental Об'єкт оренди для оновлення</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">newStatus Новий статус (&quot;RETURNED&quot;, &quot;CANCELLED&quot; тощо)</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">costumes Список костюмів, пов'язаних з орендою</span>
+     <span class="s2">*/</span>
+    <span class="s0">public void </span><span class="s1">updateRentalStatus(Rental rental, String newStatus, List&lt;Costume&gt; costumes) {</span>
+        <span class="s0">if </span><span class="s1">(</span><span class="s4">&quot;RETURNED&quot;</span><span class="s1">.equals(newStatus)) {</span>
+            <span class="s1">BigDecimal penalty = calculatePenalty(rental, costumes);</span>
+            <span class="s1">rental.setPenaltyAmount(penalty);</span>
+        <span class="s1">}</span>
+
+        <span class="s2">// Автоматичне переведення в OVERDUE, якщо дата пройшла і статус не RETURNED</span>
+        <span class="s0">if </span><span class="s1">(!</span><span class="s4">&quot;RETURNED&quot;</span><span class="s1">.equals(newStatus) &amp;&amp; rental.getEndDate().isBefore(LocalDate.now())) {</span>
+            <span class="s1">newStatus = </span><span class="s4">&quot;OVERDUE&quot;</span><span class="s1">;</span>
+        <span class="s1">}</span>
+
+        <span class="s1">rental.setStatus(newStatus);</span>
+        <span class="s1">rentalRepository.update(rental);</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">validateRentalDates(LocalDate start, LocalDate end) {</span>
+        <span class="s0">if </span><span class="s1">(start == </span><span class="s0">null </span><span class="s1">|| end == </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalArgumentException(</span><span class="s4">&quot;Дати не можуть бути порожніми.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+        <span class="s0">if </span><span class="s1">(start.isBefore(LocalDate.now())) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalArgumentException(</span><span class="s4">&quot;Дата початку не може бути в минулому.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+        <span class="s0">if </span><span class="s1">(start.isAfter(end)) {</span>
+            <span class="s0">throw new </span><span class="s1">IllegalArgumentException(</span>
+                    <span class="s4">&quot;Дата початку не може бути пізніше дати завершення.&quot;</span><span class="s1">);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

@@ -1,0 +1,4431 @@
+
+
+===== ./src/main/java/com/oliinyk/costumes/Main.java =====
+
+package com.oliinyk.costumes;
+
+import atlantafx.base.theme.PrimerLight;
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import java.net.URL;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+/** Головний клас додатку. Ініціалізує базу даних та запускає JavaFX інтерфейс. */
+public class Main extends Application {
+
+    @Override
+    public void init() throws Exception {
+        // 1. Ініціалізація бази даних та запуск міграцій Flyway
+        // H2 embedded database file in current directory
+        DatabaseManager.initialize("jdbc:h2:./carnival_rental_db;DB_CLOSE_DELAY=-1", "sa", "");
+    }
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+        // 2. Налаштування теми AtlantaFX (Світла за замовчуванням)
+        Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+
+        // 3. Завантаження головного FXML
+        URL fxmlLocation = getClass().getResource("/views/LoginView.fxml");
+        if (fxmlLocation == null) {
+            throw new IllegalStateException(
+                    "Не вдалося знайти файл /views/LoginView.fxml у ресурсах");
+        }
+
+        FXMLLoader loader = new FXMLLoader(fxmlLocation);
+        Parent root = loader.load();
+
+        // 4. Відображення головного вікна
+        primaryStage.setTitle("Карнавальні Костюми - Авторизація");
+        primaryStage.setScene(new Scene(root, 450, 400));
+        primaryStage.setMinWidth(450);
+        primaryStage.setMinHeight(400);
+        primaryStage.setResizable(false);
+        primaryStage.show();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        // Завершення роботи: безпечне закриття з'єднань із базою даних
+        DatabaseManager.close();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/dto/RentalDTO.java =====
+
+package com.oliinyk.costumes.dto;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import lombok.Builder;
+import lombok.Data;
+
+/**
+ * DTO для передачі даних про замовлення (оренду). Використовується для відокремлення моделей БД від
+ * шару представлення.
+ */
+@Data
+@Builder
+public class RentalDTO {
+    private UUID id;
+    private UUID userId;
+    private String userEmail;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private BigDecimal totalPrice;
+    private BigDecimal penaltyAmount;
+    private BigDecimal totalDeposit;
+    private String status;
+    private List<String> costumeNames;
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/infrastructure/DatabaseManager.java =====
+
+package com.oliinyk.costumes.infrastructure;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+import org.flywaydb.core.Flyway;
+
+public class DatabaseManager {
+    private static HikariDataSource dataSource;
+
+    public static void initialize(String url, String user, String password) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(url);
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setMaximumPoolSize(10);
+
+        dataSource = new HikariDataSource(config);
+
+        // Flyway не може сканувати classpath у named JPMS-модулі через обмеження
+        // ClassLoader.getResources().
+        // Class.getResource() натомість має доступ до ресурсів того ж модуля.
+        // Отримуємо filesystem-шлях і передаємо як filesystem: location.
+        java.net.URL migrationDirUrl = DatabaseManager.class.getResource("/db/migration/");
+        String migrationLocation;
+        if (migrationDirUrl != null && "file".equals(migrationDirUrl.getProtocol())) {
+            try {
+                migrationLocation =
+                        "filesystem:"
+                                + java.nio.file.Paths.get(migrationDirUrl.toURI()).toAbsolutePath();
+            } catch (java.net.URISyntaxException e) {
+                migrationLocation = "classpath:db/migration";
+            }
+        } else {
+            // Fallback для запуску з JAR
+            migrationLocation = "classpath:db/migration";
+        }
+
+        Flyway flyway =
+                Flyway.configure(DatabaseManager.class.getClassLoader())
+                        .dataSource(dataSource)
+                        .locations(migrationLocation)
+                        .load();
+        flyway.migrate();
+    }
+
+    public static Connection getConnection() throws SQLException {
+        if (dataSource == null) {
+            throw new IllegalStateException("DatabaseManager is not initialized.");
+        }
+        return dataSource.getConnection();
+    }
+
+    public static void close() {
+        if (dataSource != null) {
+            dataSource.close();
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/model/Category.java =====
+
+package com.oliinyk.costumes.model;
+
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Category {
+    private UUID id;
+    private String name;
+    private String description;
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/model/Costume.java =====
+
+package com.oliinyk.costumes.model;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Costume {
+    private UUID id;
+    private UUID categoryId;
+    private String name;
+    private String description;
+    private String imagePath;
+    private BigDecimal pricePerDay;
+    private BigDecimal depositAmount;
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/model/Rental.java =====
+
+package com.oliinyk.costumes.model;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Rental {
+    private UUID id;
+    private UUID userId;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private BigDecimal totalPrice;
+    private BigDecimal penaltyAmount;
+    private String status;
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/model/RentalItem.java =====
+
+package com.oliinyk.costumes.model;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RentalItem {
+    private UUID rentalId;
+    private UUID costumeId;
+    private BigDecimal priceAtRental;
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/model/User.java =====
+
+package com.oliinyk.costumes.model;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User {
+    private UUID id;
+    private String email;
+    private String passwordHash;
+    private String role;
+    private String verificationCode;
+    private boolean isVerified;
+    private boolean isBlocked;
+    private LocalDateTime createdAt;
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/CategoryRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.model.Category;
+
+/** Інтерфейс репозиторію для управління категоріями костюмів. */
+public interface CategoryRepository extends Repository<Category> {}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/CostumeRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.model.Costume;
+
+/** Інтерфейс репозиторію для управління костюмами. */
+public interface CostumeRepository extends Repository<Costume> {}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/JdbcCategoryRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import com.oliinyk.costumes.model.Category;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * JDBC реалізація репозиторію категорій. Забезпечує взаємодію з таблицею categories у базі даних.
+ */
+public class JdbcCategoryRepository implements CategoryRepository {
+
+    /**
+     * Зберігає нову категорію в базі даних.
+     *
+     * @param category об'єкт категорії для збереження
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(Category category) {
+        String sql = "INSERT INTO categories (id, name, description) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, category.getId());
+            stmt.setString(2, category.getName());
+            stmt.setString(3, category.getDescription());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні категорії", e);
+        }
+    }
+
+    /**
+     * Знаходить категорію за її ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор категорії
+     * @return Optional з категорією, якщо знайдено, або порожній Optional
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public Optional<Category> findById(UUID id) {
+        String sql = "SELECT * FROM categories WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToCategory(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку категорії за ID", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Повертає список усіх категорій з бази даних.
+     *
+     * @return список усіх категорій
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public List<Category> findAll() {
+        String sql = "SELECT * FROM categories";
+        List<Category> categories = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                categories.add(mapResultSetToCategory(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при отриманні всіх категорій", e);
+        }
+        return categories;
+    }
+
+    /**
+     * Оновлює дані існуючої категорії в базі даних.
+     *
+     * @param category об'єкт категорії з оновленими даними
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void update(Category category) {
+        String sql = "UPDATE categories SET name = ?, description = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, category.getName());
+            stmt.setString(2, category.getDescription());
+            stmt.setObject(3, category.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при оновленні категорії", e);
+        }
+    }
+
+    /**
+     * Видаляє категорію за її ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор категорії для видалення
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void delete(UUID id) {
+        String sql = "DELETE FROM categories WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при видаленні категорії", e);
+        }
+    }
+
+    /**
+     * Перетворює рядок ResultSet у об'єкт Category.
+     *
+     * @param rs ResultSet з результатами запиту
+     * @return об'єкт Category
+     * @throws SQLException якщо виникла помилка при читанні з ResultSet
+     */
+    private Category mapResultSetToCategory(ResultSet rs) throws SQLException {
+        return Category.builder()
+                .id(rs.getObject("id", UUID.class))
+                .name(rs.getString("name"))
+                .description(rs.getString("description"))
+                .build();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/JdbcCostumeRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import com.oliinyk.costumes.model.Costume;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/** JDBC реалізація репозиторію костюмів. Забезпечує взаємодію з таблицею costumes у базі даних. */
+public class JdbcCostumeRepository implements CostumeRepository {
+
+    /**
+     * Зберігає новий костюм у базі даних.
+     *
+     * @param costume об'єкт костюма для збереження
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(Costume costume) {
+        String sql =
+                "INSERT INTO costumes (id, category_id, name, description, price_per_day, image_path, deposit_amount) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, costume.getId());
+            stmt.setObject(2, costume.getCategoryId());
+            stmt.setString(3, costume.getName());
+            stmt.setString(4, costume.getDescription());
+            stmt.setBigDecimal(5, costume.getPricePerDay());
+            stmt.setString(6, costume.getImagePath());
+            stmt.setBigDecimal(7, costume.getDepositAmount());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні костюма", e);
+        }
+    }
+
+    /**
+     * Знаходить костюм за його ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор костюма
+     * @return Optional з костюмом, якщо знайдено, або порожній Optional
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public Optional<Costume> findById(UUID id) {
+        String sql = "SELECT * FROM costumes WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToCostume(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку костюма за ID", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Повертає список усіх костюмів з бази даних.
+     *
+     * @return список усіх костюмів
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public List<Costume> findAll() {
+        String sql = "SELECT * FROM costumes";
+        List<Costume> costumes = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                costumes.add(mapResultSetToCostume(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при отриманні всіх костюмів", e);
+        }
+        return costumes;
+    }
+
+    /**
+     * Оновлює дані існуючого костюма в базі даних.
+     *
+     * @param costume об'єкт костюма з оновленими даними
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void update(Costume costume) {
+        String sql =
+                "UPDATE costumes SET category_id = ?, name = ?, description = ?, price_per_day = ?, image_path = ?, deposit_amount = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, costume.getCategoryId());
+            stmt.setString(2, costume.getName());
+            stmt.setString(3, costume.getDescription());
+            stmt.setBigDecimal(4, costume.getPricePerDay());
+            stmt.setString(5, costume.getImagePath());
+            stmt.setBigDecimal(6, costume.getDepositAmount());
+            stmt.setObject(7, costume.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при оновленні костюма", e);
+        }
+    }
+
+    /**
+     * Видаляє костюм за його ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор костюма для видалення
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void delete(UUID id) {
+        String sql = "DELETE FROM costumes WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при видаленні костюма", e);
+        }
+    }
+
+    /**
+     * Перетворює рядок ResultSet у об'єкт Costume.
+     *
+     * @param rs ResultSet з результатами запиту
+     * @return об'єкт Costume
+     * @throws SQLException якщо виникла помилка при читанні з ResultSet
+     */
+    private Costume mapResultSetToCostume(ResultSet rs) throws SQLException {
+        return Costume.builder()
+                .id(rs.getObject("id", UUID.class))
+                .categoryId(rs.getObject("category_id", UUID.class))
+                .name(rs.getString("name"))
+                .description(rs.getString("description"))
+                .pricePerDay(rs.getBigDecimal("price_per_day"))
+                .imagePath(rs.getString("image_path"))
+                .depositAmount(rs.getBigDecimal("deposit_amount"))
+                .build();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/JdbcRentalItemRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import com.oliinyk.costumes.model.RentalItem;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * JDBC реалізація репозиторію елементів оренди. Підтримує транзакційність та забезпечує взаємодію з
+ * таблицею rental_items.
+ */
+public class JdbcRentalItemRepository implements RentalItemRepository {
+
+    /**
+     * Зберігає новий елемент оренди в базі даних. Створює нове з'єднання для виконання операції.
+     *
+     * @param item об'єкт елемента оренди для збереження
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(RentalItem item) {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            save(item, conn);
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні елемента оренди", e);
+        }
+    }
+
+    /**
+     * Зберігає елемент оренди в межах існуючої транзакції.
+     *
+     * @param item об'єкт елемента оренди для збереження
+     * @param conn існуюче SQL з'єднання
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(RentalItem item, Connection conn) {
+        String sql =
+                "INSERT INTO rental_items (rental_id, costume_id, price_at_rental) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, item.getRentalId());
+            stmt.setObject(2, item.getCostumeId());
+            stmt.setBigDecimal(3, item.getPriceAtRental());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні елемента оренди в транзакції", e);
+        }
+    }
+
+    /**
+     * Знаходить усі елементи для конкретної оренди за її ідентифікатором.
+     *
+     * @param rentalId унікальний ідентифікатор оренди
+     * @return список елементів оренди
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public List<RentalItem> findByRentalId(UUID rentalId) {
+        String sql = "SELECT * FROM rental_items WHERE rental_id = ?";
+        List<RentalItem> items = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, rentalId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapResultSetToRentalItem(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку елементів оренди", e);
+        }
+        return items;
+    }
+
+    /**
+     * Перетворює рядок ResultSet у об'єкт RentalItem.
+     *
+     * @param rs ResultSet з результатами запиту
+     * @return об'єкт RentalItem
+     * @throws SQLException якщо виникла помилка при читанні з ResultSet
+     */
+    private RentalItem mapResultSetToRentalItem(ResultSet rs) throws SQLException {
+        return RentalItem.builder()
+                .rentalId(rs.getObject("rental_id", UUID.class))
+                .costumeId(rs.getObject("costume_id", UUID.class))
+                .priceAtRental(rs.getBigDecimal("price_at_rental"))
+                .build();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/JdbcRentalRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import com.oliinyk.costumes.model.Rental;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * JDBC реалізація репозиторію оренди. Підтримує транзакційність та забезпечує взаємодію з таблицею
+ * rentals.
+ */
+public class JdbcRentalRepository implements RentalRepository {
+
+    /**
+     * Зберігає нову оренду в базі даних. Створює нове з'єднання для виконання операції.
+     *
+     * @param rental об'єкт оренди для збереження
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(Rental rental) {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            save(rental, conn);
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні оренди", e);
+        }
+    }
+
+    /**
+     * Зберігає оренду в межах існуючої транзакції.
+     *
+     * @param rental об'єкт оренди для збереження
+     * @param conn існуюче SQL з'єднання
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(Rental rental, Connection conn) {
+        String sql =
+                "INSERT INTO rentals (id, user_id, start_date, end_date, total_price, penalty_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, rental.getId());
+            stmt.setObject(2, rental.getUserId());
+            stmt.setObject(3, java.sql.Date.valueOf(rental.getStartDate()));
+            stmt.setObject(4, java.sql.Date.valueOf(rental.getEndDate()));
+            stmt.setBigDecimal(5, rental.getTotalPrice());
+            stmt.setBigDecimal(6, rental.getPenaltyAmount());
+            stmt.setString(7, rental.getStatus());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні оренди в транзакції", e);
+        }
+    }
+
+    /**
+     * Знаходить оренду за її ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор оренди
+     * @return Optional з орендою, якщо знайдено, або порожній Optional
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public Optional<Rental> findById(UUID id) {
+        String sql = "SELECT * FROM rentals WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToRental(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку оренди за ID", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Повертає список усіх оренд з бази даних.
+     *
+     * @return список усіх оренд
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public List<Rental> findAll() {
+        String sql = "SELECT * FROM rentals";
+        List<Rental> rentals = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                rentals.add(mapResultSetToRental(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при отриманні всіх оренд", e);
+        }
+        return rentals;
+    }
+
+    /**
+     * Знаходить усі оренди конкретного користувача.
+     *
+     * @param userId унікальний ідентифікатор користувача
+     * @return список оренд користувача
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public List<Rental> findByUserId(UUID userId) {
+        String sql = "SELECT * FROM rentals WHERE user_id = ?";
+        List<Rental> rentals = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    rentals.add(mapResultSetToRental(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку оренд користувача", e);
+        }
+        return rentals;
+    }
+
+    /**
+     * Оновлює дані існуючої оренди в базі даних.
+     *
+     * @param rental об'єкт оренди з оновленими даними
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void update(Rental rental) {
+        String sql =
+                "UPDATE rentals SET user_id = ?, start_date = ?, end_date = ?, total_price = ?, penalty_amount = ?, status = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, rental.getUserId());
+            stmt.setObject(2, java.sql.Date.valueOf(rental.getStartDate()));
+            stmt.setObject(3, java.sql.Date.valueOf(rental.getEndDate()));
+            stmt.setBigDecimal(4, rental.getTotalPrice());
+            stmt.setBigDecimal(5, rental.getPenaltyAmount());
+            stmt.setString(6, rental.getStatus());
+            stmt.setObject(7, rental.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при оновленні оренди", e);
+        }
+    }
+
+    /**
+     * Видаляє оренду за її ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор оренди для видалення
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void delete(UUID id) {
+        String sql = "DELETE FROM rentals WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при видаленні оренди", e);
+        }
+    }
+
+    /**
+     * Перевіряє, чи доступний костюм для оренди на вказаний період. Костюм вважається зайнятим,
+     * якщо він є в активній оренді або резерві, що перетинається з вказаними датами.
+     *
+     * @param costumeId унікальний ідентифікатор костюма
+     * @param start дата початку бажаного періоду оренди
+     * @param end дата закінчення бажаного періоду оренди
+     * @return true, якщо костюм вільний, false — якщо зайнятий
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public boolean isCostumeAvailable(
+            UUID costumeId, java.time.LocalDate start, java.time.LocalDate end) {
+        // Умова перетину періодів [A, B] та [C, D]: A <= D AND B >= C
+        // Критичний баг 1: Костюм зайнятий, якщо статус ACTIVE, RESERVED, ISSUED або OVERDUE
+        // (Вимога стабільності)
+        String sql =
+                "SELECT COUNT(*) FROM rentals r "
+                        + "JOIN rental_items ri ON r.id = ri.rental_id "
+                        + "WHERE ri.costume_id = ? AND r.status IN ('ACTIVE', 'RESERVED', 'ISSUED', 'OVERDUE') "
+                        + "AND r.start_date <= ? AND r.end_date >= ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, costumeId);
+            stmt.setObject(2, java.sql.Date.valueOf(end)); // r.start_date <= end
+            stmt.setObject(3, java.sql.Date.valueOf(start)); // r.end_date >= start
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) == 0;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при перевірці доступності костюма", e);
+        }
+        return false;
+    }
+
+    /**
+     * Перетворює рядок ResultSet у об'єкт Rental.
+     *
+     * @param rs ResultSet з результатами запиту
+     * @return об'єкт Rental
+     * @throws SQLException якщо виникла помилка при читанні з ResultSet
+     */
+    private Rental mapResultSetToRental(ResultSet rs) throws SQLException {
+        return Rental.builder()
+                .id(rs.getObject("id", UUID.class))
+                .userId(rs.getObject("user_id", UUID.class))
+                .startDate(rs.getDate("start_date").toLocalDate())
+                .endDate(rs.getDate("end_date").toLocalDate())
+                .totalPrice(rs.getBigDecimal("total_price"))
+                .penaltyAmount(rs.getBigDecimal("penalty_amount"))
+                .status(rs.getString("status"))
+                .build();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/JdbcUserRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import com.oliinyk.costumes.model.User;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/** JDBC реалізація репозиторію користувачів. Забезпечує взаємодію з таблицею users у базі даних. */
+public class JdbcUserRepository implements UserRepository {
+
+    /**
+     * Зберігає нового користувача в базі даних.
+     *
+     * @param user об'єкт користувача для збереження
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void save(User user) {
+        String sql =
+                "INSERT INTO users (id, email, password_hash, role, verification_code, is_verified, is_blocked, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, user.getId());
+            stmt.setString(2, user.getEmail());
+            stmt.setString(3, user.getPasswordHash());
+            stmt.setString(4, user.getRole());
+            stmt.setString(5, user.getVerificationCode());
+            stmt.setBoolean(6, user.isVerified());
+            stmt.setBoolean(7, user.isBlocked());
+            stmt.setTimestamp(
+                    8,
+                    user.getCreatedAt() != null
+                            ? Timestamp.valueOf(user.getCreatedAt())
+                            : new Timestamp(System.currentTimeMillis()));
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при збереженні користувача", e);
+        }
+    }
+
+    /**
+     * Знаходить користувача за його ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор користувача
+     * @return Optional з користувачем, якщо знайдено, або порожній Optional
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public Optional<User> findById(UUID id) {
+        String sql = "SELECT * FROM users WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку користувача за ID", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Знаходить користувача за його електронною поштою.
+     *
+     * @param email електронна пошта користувача
+     * @return Optional з користувачем, якщо знайдено, або порожній Optional
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public Optional<User> findByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToUser(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при пошуку користувача за email", e);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Повертає список усіх користувачів з бази даних.
+     *
+     * @return список усіх користувачів
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public List<User> findAll() {
+        String sql = "SELECT * FROM users";
+        List<User> users = new ArrayList<>();
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                users.add(mapResultSetToUser(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при отриманні всіх користувачів", e);
+        }
+        return users;
+    }
+
+    /**
+     * Оновлює дані існуючого користувача в базі даних.
+     *
+     * @param user об'єкт користувача з оновленими даними
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void update(User user) {
+        String sql =
+                "UPDATE users SET email = ?, password_hash = ?, role = ?, verification_code = ?, is_verified = ?, is_blocked = ? WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, user.getEmail());
+            stmt.setString(2, user.getPasswordHash());
+            stmt.setString(3, user.getRole());
+            stmt.setString(4, user.getVerificationCode());
+            stmt.setBoolean(5, user.isVerified());
+            stmt.setBoolean(6, user.isBlocked());
+            stmt.setObject(7, user.getId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при оновленні користувача", e);
+        }
+    }
+
+    /**
+     * Видаляє користувача за його ідентифікатором.
+     *
+     * @param id унікальний ідентифікатор користувача для видалення
+     * @throws RuntimeException якщо виникла помилка SQL під час виконання запиту
+     */
+    @Override
+    public void delete(UUID id) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка при видаленні користувача", e);
+        }
+    }
+
+    /**
+     * Перетворює рядок ResultSet у об'єкт User.
+     *
+     * @param rs ResultSet з результатами запиту
+     * @return об'єкт User
+     * @throws SQLException якщо виникла помилка при читанні з ResultSet
+     */
+    private User mapResultSetToUser(ResultSet rs) throws SQLException {
+        return User.builder()
+                .id(rs.getObject("id", UUID.class))
+                .email(rs.getString("email"))
+                .passwordHash(rs.getString("password_hash"))
+                .role(rs.getString("role"))
+                .verificationCode(rs.getString("verification_code"))
+                .isVerified(rs.getBoolean("is_verified"))
+                .isBlocked(rs.getBoolean("is_blocked"))
+                .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
+                .build();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/RentalItemRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.model.RentalItem;
+import java.sql.Connection;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Репозиторій для роботи з елементами оренди. Керує даними про конкретні костюми, що входять до
+ * складу замовлення.
+ */
+public interface RentalItemRepository {
+    /**
+     * Зберігає новий елемент оренди в базі даних.
+     *
+     * @param item об'єкт елемента оренди
+     */
+    void save(RentalItem item);
+
+    /**
+     * Зберігає елемент оренди в межах існуючої транзакції.
+     *
+     * @param item об'єкт елемента оренди для збереження
+     * @param conn існуюче SQL з'єднання
+     */
+    void save(RentalItem item, Connection conn);
+
+    /**
+     * Знаходить усі елементи (костюми), що входять до вказаної оренди.
+     *
+     * @param rentalId унікальний ідентифікатор оренди
+     * @return список елементів оренди
+     */
+    List<RentalItem> findByRentalId(UUID rentalId);
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/RentalRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.model.Rental;
+import java.sql.Connection;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Репозиторій для управління даними про оренду. Розширює базовий інтерфейс Repository для моделі
+ * Rental.
+ */
+public interface RentalRepository extends Repository<Rental> {
+    /**
+     * Знаходить усі оренди, що належать конкретному користувачу.
+     *
+     * @param userId унікальний ідентифікатор користувача
+     * @return список усіх оренд користувача
+     */
+    List<Rental> findByUserId(UUID userId);
+
+    /**
+     * Зберігає дані про оренду в межах існуючої транзакції.
+     *
+     * @param rental об'єкт оренди для збереження
+     * @param conn існуюче SQL з'єднання
+     */
+    void save(Rental rental, Connection conn);
+
+    /**
+     * Перевіряє, чи є вказаний костюм вільним для оренди на заданий період.
+     *
+     * @param costumeId унікальний ідентифікатор костюма
+     * @param start дата початку бажаного періоду
+     * @param end дата закінчення бажаного періоду
+     * @return true, якщо костюм доступний для оренди, false — якщо зайнятий
+     */
+    boolean isCostumeAvailable(UUID costumeId, java.time.LocalDate start, java.time.LocalDate end);
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/Repository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * Базовий інтерфейс репозиторію для виконання CRUD операцій.
+ *
+ * @param <T> Тип об'єкта моделі
+ */
+public interface Repository<T> {
+    /**
+     * Зберегти новий об'єкт у базі даних.
+     *
+     * @param entity Об'єкт для збереження
+     */
+    void save(T entity);
+
+    /**
+     * Знайти об'єкт за його унікальним ідентифікатором.
+     *
+     * @param id UUID об'єкта
+     * @return Optional, що містить об'єкт, або порожній, якщо не знайдено
+     */
+    Optional<T> findById(UUID id);
+
+    /**
+     * Отримати список усіх об'єктів даного типу.
+     *
+     * @return Список усіх об'єктів
+     */
+    List<T> findAll();
+
+    /**
+     * Оновити існуючий об'єкт у базі даних.
+     *
+     * @param entity Об'єкт з оновленими даними
+     */
+    void update(T entity);
+
+    /**
+     * Видалити об'єкт за його ідентифікатором.
+     *
+     * @param id UUID об'єкта для видалення
+     */
+    void delete(UUID id);
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/repository/UserRepository.java =====
+
+package com.oliinyk.costumes.repository;
+
+import com.oliinyk.costumes.model.User;
+import java.util.Optional;
+
+/**
+ * Репозиторій для управління даними користувачів. Розширює базовий інтерфейс Repository для моделі
+ * User.
+ */
+public interface UserRepository extends Repository<User> {
+    /**
+     * Знаходить користувача за його електронною поштою.
+     *
+     * @param email електронна пошта користувача для пошуку
+     * @return Optional, що містить знайденого користувача, або порожній Optional, якщо користувача
+     *     не знайдено
+     */
+    Optional<User> findByEmail(String email);
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/AuthService.java =====
+
+package com.oliinyk.costumes.service;
+
+import com.oliinyk.costumes.model.User;
+import com.oliinyk.costumes.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+import org.mindrot.jbcrypt.BCrypt;
+
+/**
+ * Сервіс для аутентифікації та авторизації користувачів. Відповідає за реєстрацію, вхід та
+ * верифікацію акаунтів.
+ */
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+
+    /**
+     * Конструктор сервісу аутентифікації.
+     *
+     * @param userRepository репозиторій для роботи з користувачами
+     * @param emailService сервіс для відправки електронних листів
+     */
+    public AuthService(UserRepository userRepository, EmailService emailService) {
+        this.userRepository = userRepository;
+        this.emailService = emailService;
+    }
+
+    /**
+     * Реєстрація нового користувача із хешуванням пароля.
+     *
+     * @param email електронна пошта користувача
+     * @param rawPassword пароль у відкритому вигляді
+     * @param role роль користувача (наприклад, "USER" або "ADMIN")
+     * @return об'єкт створеного користувача
+     * @throws IllegalArgumentException якщо користувач із таким email вже існує
+     */
+    public User registerUser(String email, String rawPassword, String role) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Користувач з таким email вже існує.");
+        }
+
+        // Хешування пароля перед збереженням у БД
+        String hashedPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
+        String verificationCode = UUID.randomUUID().toString().substring(0, 6);
+
+        User newUser =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .email(email)
+                        .passwordHash(hashedPassword)
+                        .role(role)
+                        .verificationCode(verificationCode)
+                        .isVerified(false)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+        userRepository.save(newUser);
+
+        // Відправка коду верифікації
+        emailService.sendVerificationEmail(email, verificationCode);
+
+        return newUser;
+    }
+
+    /**
+     * Авторизація користувача за email та паролем.
+     *
+     * @param email електронна пошта
+     * @param rawPassword пароль у відкритому вигляді
+     * @return Optional з об'єктом користувача, якщо авторизація успішна
+     * @throws RuntimeException якщо акаунт заблоковано
+     */
+    public Optional<User> login(String email, String rawPassword) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Перевірка відповідності введеного пароля хешу з БД
+            if (BCrypt.checkpw(rawPassword, user.getPasswordHash())) {
+                if (user.isBlocked()) {
+                    throw new RuntimeException("Ваш акаунт заблоковано адміністратором.");
+                }
+                return Optional.of(user);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Підтвердження пошти користувача за допомогою коду верифікації.
+     *
+     * @param email електронна пошта користувача
+     * @param code код верифікації
+     * @return true, якщо верифікація пройшла успішно, інакше false
+     */
+    public boolean verifyUser(String email, String code) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (!user.isVerified() && code.equals(user.getVerificationCode())) {
+                user.setVerified(true);
+                user.setVerificationCode(null); // Очищаємо код після успішної верифікації
+                userRepository.update(user);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/BasketService.java =====
+
+package com.oliinyk.costumes.service;
+
+import com.oliinyk.costumes.model.Costume;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Сервіс для керування кошиком обраних костюмів. Реалізує патерн Singleton. */
+public class BasketService {
+    private final List<Costume> items = new ArrayList<>();
+
+    private BasketService() {}
+
+    private static class Holder {
+        private static final BasketService INSTANCE = new BasketService();
+    }
+
+    /**
+     * Отримати єдиний екземпляр сервісу (Singleton).
+     *
+     * @return Екземпляр BasketService
+     */
+    public static BasketService getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    /**
+     * Додати костюм до кошика.
+     *
+     * @param costume Костюм, який потрібно додати
+     */
+    public void addItem(Costume costume) {
+        items.add(costume);
+    }
+
+    /**
+     * Видалити костюм з кошика.
+     *
+     * @param costume Костюм, який потрібно видалити
+     */
+    public void removeItem(Costume costume) {
+        items.remove(costume);
+    }
+
+    /**
+     * Отримати список усіх костюмів у кошику.
+     *
+     * @return Список костюмів
+     */
+    public List<Costume> getItems() {
+        return new ArrayList<>(items);
+    }
+
+    /** Очистити кошик від усіх елементів. */
+    public void clear() {
+        items.clear();
+    }
+
+    /**
+     * Розрахувати загальну вартість оренди для всіх елементів у кошику. Враховує кількість днів та
+     * можливі знижки за тривалість оренди.
+     *
+     * @param days Кількість днів оренди
+     * @return Загальна вартість оренди
+     */
+    public BigDecimal calculateRentalTotal(long days) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Costume item : items) {
+            total = total.add(item.getPricePerDay());
+        }
+        total = total.multiply(BigDecimal.valueOf(days > 0 ? days : 1));
+
+        // Логіка лояльності: знижка 10% при оренді від 3 днів (Блок 2)
+        if (days >= 3) {
+            total = total.multiply(new BigDecimal("0.90"));
+        }
+        return total;
+    }
+
+    /**
+     * Розрахувати загальну суму застави для всіх костюмів у кошику.
+     *
+     * @return Загальна сума застави
+     */
+    public BigDecimal calculateTotalDeposit() {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Costume item : items) {
+            total =
+                    total.add(
+                            item.getDepositAmount() != null
+                                    ? item.getDepositAmount()
+                                    : BigDecimal.ZERO);
+        }
+        return total;
+    }
+
+    /**
+     * Розрахувати суму знижки залежно від кількості днів оренди.
+     *
+     * @param days Кількість днів оренди
+     * @return Сума знижки
+     */
+    public BigDecimal calculateDiscount(long days) {
+        if (days < 3) return BigDecimal.ZERO;
+
+        BigDecimal totalWithoutDiscount = BigDecimal.ZERO;
+        for (Costume item : items) {
+            totalWithoutDiscount = totalWithoutDiscount.add(item.getPricePerDay());
+        }
+        totalWithoutDiscount = totalWithoutDiscount.multiply(BigDecimal.valueOf(days));
+
+        return totalWithoutDiscount.multiply(new BigDecimal("0.10"));
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/ConsoleEmailServiceImpl.java =====
+
+package com.oliinyk.costumes.service;
+
+/** Реалізація сервісу EmailService, яка виводить повідомлення в консоль (для тестування). */
+public class ConsoleEmailServiceImpl implements EmailService {
+
+    /**
+     * "Відправляє" лист, виводячи його вміст у системну консоль.
+     *
+     * @param email Адреса отримувача
+     * @param verificationCode Код підтвердження
+     */
+    @Override
+    public void sendVerificationEmail(String email, String verificationCode) {
+        // Симуляція відправки email через вивід у консоль
+        System.out.println("=====================================");
+        System.out.println("EMAIL ПОВІДОМЛЕННЯ");
+        System.out.println("Кому: " + email);
+        System.out.println("Тема: Підтвердження реєстрації");
+        System.out.println("Код підтвердження: " + verificationCode);
+        System.out.println("=====================================");
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/EmailService.java =====
+
+package com.oliinyk.costumes.service;
+
+/** Інтерфейс сервісу для відправки електронної пошти. */
+public interface EmailService {
+    /**
+     * Відправити лист для верифікації електронної адреси користувача.
+     *
+     * @param email Адреса отримувача
+     * @param verificationCode Код підтвердження
+     */
+    void sendVerificationEmail(String email, String verificationCode);
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/ImageService.java =====
+
+package com.oliinyk.costumes.service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
+
+/** Сервіс для управління зображеннями костюмів. */
+public class ImageService {
+
+    private static final String IMAGE_DIR = "app_data/images";
+
+    /**
+     * Конструктор сервісу. Створює директорію для збереження зображень, якщо вона не існує.
+     *
+     * @throws RuntimeException якщо не вдалося створити директорію
+     */
+    public ImageService() {
+        try {
+            Files.createDirectories(Paths.get(IMAGE_DIR));
+        } catch (IOException e) {
+            throw new RuntimeException("Не вдалося створити директорію для зображень", e);
+        }
+    }
+
+    /**
+     * Копіює обраний файл зображення у внутрішню директорію додатку з унікальним ім'ям.
+     *
+     * @param sourceFile Вихідний файл зображення
+     * @return Відносний шлях до збереженого зображення у системі або null, якщо файл не вказано
+     * @throws RuntimeException при помилках копіювання файлу
+     */
+    public String saveImage(File sourceFile) {
+        if (sourceFile == null) return null;
+
+        String extension = "";
+        String fileName = sourceFile.getName();
+        int i = fileName.lastIndexOf('.');
+        if (i > 0) {
+            extension = fileName.substring(i);
+        }
+
+        String newFileName = UUID.randomUUID().toString() + extension;
+        Path targetPath = Paths.get(IMAGE_DIR, newFileName);
+
+        try {
+            Files.copy(sourceFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            // Повертаємо відносний шлях для збереження в БД
+            return IMAGE_DIR + "/" + newFileName;
+        } catch (IOException e) {
+            throw new RuntimeException("Помилка при збереженні файлу зображення", e);
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/RentalFacade.java =====
+
+package com.oliinyk.costumes.service;
+
+import com.oliinyk.costumes.dto.RentalDTO;
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.model.Rental;
+import com.oliinyk.costumes.model.User;
+import com.oliinyk.costumes.repository.CostumeRepository;
+import com.oliinyk.costumes.repository.RentalRepository;
+import com.oliinyk.costumes.repository.UserRepository;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+/**
+ * Фасад для роботи з орендами. Реалізує патерн Facade (Вимога розділу 4.3.2). Спрощує доступ до
+ * бізнес-логіки для шару представлення.
+ */
+public class RentalFacade {
+
+    private final RentalService rentalService;
+    private final RentalRepository rentalRepository;
+    private final CostumeRepository costumeRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Конструктор фасаду.
+     *
+     * @param rentalService Сервіс оренди
+     * @param rentalRepository Репозиторій оренд
+     * @param costumeRepository Репозиторій костюмів
+     * @param userRepository Репозиторій користувачів
+     */
+    public RentalFacade(
+            RentalService rentalService,
+            RentalRepository rentalRepository,
+            CostumeRepository costumeRepository,
+            UserRepository userRepository) {
+        this.rentalService = rentalService;
+        this.rentalRepository = rentalRepository;
+        this.costumeRepository = costumeRepository;
+        this.userRepository = userRepository;
+    }
+
+    /**
+     * Оформити замовлення та повернути об'єкт передачі даних (DTO).
+     *
+     * @param user Користувач
+     * @param costumes Список костюмів
+     * @param start Дата початку
+     * @param end Дата завершення
+     * @return Об'єкт RentalDTO з повною інформацією про оренду
+     */
+    public RentalDTO checkout(User user, List<Costume> costumes, LocalDate start, LocalDate end) {
+        Rental rental = rentalService.checkout(user, costumes, start, end);
+        return mapToDTO(rental, costumes);
+    }
+
+    /**
+     * Оновити статус оренди за її ідентифікатором.
+     *
+     * @param rentalId Унікальний ідентифікатор оренди
+     * @param newStatus Новий статус для встановлення
+     */
+    public void updateStatus(UUID rentalId, String newStatus) {
+        rentalRepository
+                .findById(rentalId)
+                .ifPresent(
+                        rental -> {
+                            List<Costume> costumes = getCostumesByRentalId(rentalId);
+                            rentalService.updateRentalStatus(rental, newStatus, costumes);
+                        });
+    }
+
+    /**
+     * Отримати список костюмів, що входять до конкретної оренди.
+     *
+     * @param rentalId Унікальний ідентифікатор оренди
+     * @return Список об'єктів Costume
+     */
+    public List<Costume> getCostumesByRentalId(UUID rentalId) {
+        return new com.oliinyk.costumes.repository.JdbcRentalItemRepository()
+                .findByRentalId(rentalId).stream()
+                        .map(item -> costumeRepository.findById(item.getCostumeId()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .collect(Collectors.toList());
+    }
+
+    /**
+     * Отримати всі оренди у системі у форматі DTO.
+     *
+     * @return Список усіх RentalDTO
+     */
+    public List<RentalDTO> getAllRentals() {
+        return rentalRepository.findAll().stream()
+                .map(r -> mapToDTO(r, getCostumesByRentalId(r.getId())))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Отримати список оренд для конкретного користувача.
+     *
+     * @param userId Унікальний ідентифікатор користувача
+     * @return Список RentalDTO для вказаного користувача
+     */
+    public List<RentalDTO> getRentalsByUserId(java.util.UUID userId) {
+        return rentalRepository.findByUserId(userId).stream()
+                .map(r -> mapToDTO(r, getCostumesByRentalId(r.getId())))
+                .collect(Collectors.toList());
+    }
+
+    private RentalDTO mapToDTO(Rental rental, List<Costume> costumes) {
+        String userEmail =
+                userRepository.findById(rental.getUserId()).map(User::getEmail).orElse("Unknown");
+
+        BigDecimal currentPenalty = rental.getPenaltyAmount();
+        if (currentPenalty.compareTo(BigDecimal.ZERO) == 0
+                && !"RETURNED".equals(rental.getStatus())) {
+            currentPenalty = rentalService.calculatePenalty(rental, costumes);
+        }
+
+        BigDecimal totalDeposit = BigDecimal.ZERO;
+        for (Costume c : costumes) {
+            totalDeposit =
+                    totalDeposit.add(
+                            c.getDepositAmount() != null ? c.getDepositAmount() : BigDecimal.ZERO);
+        }
+
+        List<String> names = costumes.stream().map(Costume::getName).collect(Collectors.toList());
+
+        return RentalDTO.builder()
+                .id(rental.getId())
+                .userId(rental.getUserId())
+                .userEmail(userEmail)
+                .startDate(rental.getStartDate())
+                .endDate(rental.getEndDate())
+                .totalPrice(rental.getTotalPrice())
+                .penaltyAmount(currentPenalty)
+                .totalDeposit(totalDeposit)
+                .status(rental.getStatus())
+                .costumeNames(names)
+                .build();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/RentalService.java =====
+
+package com.oliinyk.costumes.service;
+
+import com.oliinyk.costumes.infrastructure.DatabaseManager;
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.model.Rental;
+import com.oliinyk.costumes.model.RentalItem;
+import com.oliinyk.costumes.model.User;
+import com.oliinyk.costumes.repository.RentalItemRepository;
+import com.oliinyk.costumes.repository.RentalRepository;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.UUID;
+
+/** Сервіс для управління процесом оренди костюмів. Забезпечує бізнес-логіку та транзакційність. */
+public class RentalService {
+
+    private final RentalRepository rentalRepository;
+    private final RentalItemRepository rentalItemRepository;
+
+    /**
+     * Конструктор для створення екземпляра сервісу оренди.
+     *
+     * @param rentalRepository Репозиторій для роботи з орендами
+     * @param rentalItemRepository Репозиторій для роботи з елементами оренди
+     */
+    public RentalService(
+            RentalRepository rentalRepository, RentalItemRepository rentalItemRepository) {
+        this.rentalRepository = rentalRepository;
+        this.rentalItemRepository = rentalItemRepository;
+    }
+
+    /**
+     * Оформлення нового замовлення (Checkout). Використовує транзакцію для збереження інформації
+     * про оренду та її елементи.
+     *
+     * @param user Користувач, який оформлює замовлення
+     * @param costumes Список костюмів для оренди
+     * @param startDate Дата початку оренди
+     * @param endDate Дата закінчення оренди
+     * @return Об'єкт створеної оренди
+     * @throws IllegalArgumentException якщо дані некоректні або кошик порожній
+     * @throws IllegalStateException якщо один з костюмів недоступний на вказані дати
+     * @throws RuntimeException при помилках роботи з базою даних
+     */
+    public Rental checkout(
+            User user, List<Costume> costumes, LocalDate startDate, LocalDate endDate) {
+        // 1. Бізнес-валідація
+        validateRentalDates(startDate, endDate);
+        if (costumes == null || costumes.isEmpty()) {
+            throw new IllegalArgumentException("Кошик порожній.");
+        }
+
+        // Перевірка доступності кожного костюма
+        for (Costume costume : costumes) {
+            if (!rentalRepository.isCostumeAvailable(costume.getId(), startDate, endDate)) {
+                throw new IllegalStateException(
+                        "Костюм '" + costume.getName() + "' вже орендований на ці дати.");
+            }
+        }
+
+        long days = ChronoUnit.DAYS.between(startDate, endDate);
+        if (days == 0) days = 1;
+
+        // Використання нової логіки розрахунку з BasketService (Блок 2)
+        BasketService basketService = BasketService.getInstance();
+        BigDecimal rentalPrice = basketService.calculateRentalTotal(days);
+        BigDecimal totalDeposit = basketService.calculateTotalDeposit();
+
+        // Загальна сума до сплати при оформленні
+        BigDecimal finalPrice = rentalPrice.add(totalDeposit);
+
+        Rental rental =
+                Rental.builder()
+                        .id(UUID.randomUUID())
+                        .userId(user.getId())
+                        .startDate(startDate)
+                        .endDate(endDate)
+                        .totalPrice(finalPrice)
+                        .penaltyAmount(BigDecimal.ZERO)
+                        .status("RESERVED") // Початковий статус за новою схемою
+                        .build();
+
+        // 2. Виконання транзакції (Вимога розділу 3.4 - чистий JDBC)
+        try (Connection conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(false); // Початок транзакції
+            try {
+                // Використання репозиторіїв у межах однієї транзакції
+                rentalRepository.save(rental, conn);
+
+                for (Costume costume : costumes) {
+                    RentalItem item =
+                            RentalItem.builder()
+                                    .rentalId(rental.getId())
+                                    .costumeId(costume.getId())
+                                    .priceAtRental(costume.getPricePerDay())
+                                    .build();
+                    rentalItemRepository.save(item, conn);
+                }
+
+                conn.commit(); // Підтвердження транзакції
+                return rental;
+            } catch (Exception e) {
+                conn.rollback(); // Відкат транзакції у разі помилки
+                throw new RuntimeException(
+                        "Помилка при оформленні оренди. Тразакцію скасовано.", e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Помилка з'єднання з базою даних", e);
+        }
+    }
+
+    /**
+     * Розрахувати штраф за прострочення оренди.
+     *
+     * @param rental Об'єкт оренди
+     * @param costumes Список костюмів у цій оренді
+     * @return Сума нарахованого штрафу
+     */
+    public BigDecimal calculatePenalty(Rental rental, List<Costume> costumes) {
+        if (rental.getEndDate().isAfter(LocalDate.now())) {
+            return BigDecimal.ZERO;
+        }
+
+        long overdueDays = ChronoUnit.DAYS.between(rental.getEndDate(), LocalDate.now());
+        if (overdueDays <= 0) return BigDecimal.ZERO;
+
+        BigDecimal dailyRate = BigDecimal.ZERO;
+        for (Costume c : costumes) {
+            dailyRate = dailyRate.add(c.getPricePerDay());
+        }
+
+        return dailyRate.multiply(BigDecimal.valueOf(overdueDays));
+    }
+
+    /**
+     * Оновлення статусу оренди з автоматичною перевіркою прострочки та нарахуванням штрафу.
+     *
+     * @param rental Об'єкт оренди для оновлення
+     * @param newStatus Новий статус ("RETURNED", "CANCELLED" тощо)
+     * @param costumes Список костюмів, пов'язаних з орендою
+     */
+    public void updateRentalStatus(Rental rental, String newStatus, List<Costume> costumes) {
+        if ("RETURNED".equals(newStatus)) {
+            BigDecimal penalty = calculatePenalty(rental, costumes);
+            rental.setPenaltyAmount(penalty);
+        }
+
+        // Автоматичне переведення в OVERDUE, якщо дата пройшла і статус не RETURNED
+        if (!"RETURNED".equals(newStatus) && rental.getEndDate().isBefore(LocalDate.now())) {
+            newStatus = "OVERDUE";
+        }
+
+        rental.setStatus(newStatus);
+        rentalRepository.update(rental);
+    }
+
+    private void validateRentalDates(LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Дати не можуть бути порожніми.");
+        }
+        if (start.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Дата початку не може бути в минулому.");
+        }
+        if (start.isAfter(end)) {
+            throw new IllegalArgumentException(
+                    "Дата початку не може бути пізніше дати завершення.");
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/ReportService.java =====
+
+package com.oliinyk.costumes.service;
+
+import com.oliinyk.costumes.dto.RentalDTO;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+/** Сервіс для генерації звітів (Вимога розділу 5.4). */
+public class ReportService {
+
+    /**
+     * Експортує список оренд у CSV файл.
+     *
+     * @param rentals Список об'єктів RentalDTO для експорту
+     * @param file Файл, у який буде здійснено запис
+     * @throws IOException при помилках запису у файл
+     */
+    public void exportRentalsToCsv(List<RentalDTO> rentals, java.io.File file) throws IOException {
+        try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+            // Додавання BOM для коректного відображення UTF-8 в Excel
+            writer.write('\ufeff');
+
+            // Заголовок
+            writer.write(
+                    "ID,Користувач,Дата Початку,Дата Кінця,Статус,Загальна Ціна,Застава,Штраф,Костюми\n");
+
+            for (RentalDTO rental : rentals) {
+                writer.write(
+                        String.format(
+                                "%s,%s,%s,%s,%s,\"%.2f\",\"%.2f\",\"%.2f\",\"%s\"\n",
+                                rental.getId(),
+                                rental.getUserEmail(),
+                                rental.getStartDate(),
+                                rental.getEndDate(),
+                                rental.getStatus(),
+                                rental.getTotalPrice(),
+                                rental.getTotalDeposit(),
+                                rental.getPenaltyAmount(),
+                                String.join("; ", rental.getCostumeNames())));
+            }
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/service/SessionManager.java =====
+
+package com.oliinyk.costumes.service;
+
+import com.oliinyk.costumes.model.User;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
+/** Менеджер сесії користувача та глобальних налаштувань додатку. Реалізує патерн Singleton. */
+public class SessionManager {
+    private User currentUser;
+
+    private final StringProperty viewMode = new SimpleStringProperty("GRID");
+    private final StringProperty theme = new SimpleStringProperty("LIGHT");
+
+    private SessionManager() {}
+
+    private static class Holder {
+        private static final SessionManager INSTANCE = new SessionManager();
+    }
+
+    /**
+     * Отримати єдиний екземпляр менеджера сесії (Singleton).
+     *
+     * @return Екземпляр SessionManager
+     */
+    public static SessionManager getInstance() {
+        return Holder.INSTANCE;
+    }
+
+    /**
+     * Встановити поточного користувача після успішного входу.
+     *
+     * @param user Об'єкт авторизованого користувача
+     */
+    public void login(User user) {
+        this.currentUser = user;
+    }
+
+    /** Очистити дані поточної сесії (вихід із системи). */
+    public void logout() {
+        this.currentUser = null;
+    }
+
+    /**
+     * Отримати дані поточного авторизованого користувача.
+     *
+     * @return Об'єкт User або null, якщо ніхто не увійшов
+     */
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    /**
+     * Перевірити, чи є активна сесія користувача.
+     *
+     * @return true, якщо користувач авторизований, інакше false
+     */
+    public boolean isLoggedIn() {
+        return currentUser != null;
+    }
+
+    /**
+     * Перевірити, чи має поточний користувач права адміністратора.
+     *
+     * @return true, якщо користувач адміністратор, інакше false
+     */
+    public boolean isAdmin() {
+        return isLoggedIn() && "ADMIN".equalsIgnoreCase(currentUser.getRole());
+    }
+
+    /**
+     * Властивість режиму відображення каталогу (GRID або LIST). Використовується для зв'язування з
+     * інтерфейсом JavaFX.
+     *
+     * @return Властивість viewMode
+     */
+    public StringProperty viewModeProperty() {
+        return viewMode;
+    }
+
+    /**
+     * Властивість поточної теми додатку (LIGHT або DARK). Використовується для зв'язування з
+     * інтерфейсом JavaFX.
+     *
+     * @return Властивість theme
+     */
+    public StringProperty themeProperty() {
+        return theme;
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/AdminPanelController.java =====
+
+package com.oliinyk.costumes.view;
+
+import com.oliinyk.costumes.dto.RentalDTO;
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.model.User;
+import com.oliinyk.costumes.repository.JdbcCostumeRepository;
+import com.oliinyk.costumes.repository.JdbcRentalItemRepository;
+import com.oliinyk.costumes.repository.JdbcRentalRepository;
+import com.oliinyk.costumes.repository.JdbcUserRepository;
+import com.oliinyk.costumes.service.RentalFacade;
+import com.oliinyk.costumes.service.RentalService;
+import java.util.List;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.concurrent.Task;
+import javafx.fxml.FXML;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+
+/**
+ * Контролер панелі адміністратора. Реалізує CRUD операції, асинхронне завантаження та фільтрацію
+ * (Вимоги 5.1, 5.2, 4.4.5).
+ */
+public class AdminPanelController {
+
+    @FXML private TableView<Costume> costumesTable;
+    @FXML private TableView<User> usersTable;
+    @FXML private TableView<RentalDTO> rentalsTable;
+    @FXML private TextField costumeSearchField;
+    @FXML private javafx.scene.chart.PieChart statusChart;
+    @FXML private javafx.scene.chart.BarChart<String, Number> popularityChart;
+
+    private final JdbcCostumeRepository costumeRepo = new JdbcCostumeRepository();
+    private final JdbcUserRepository userRepo = new JdbcUserRepository();
+    private final com.oliinyk.costumes.service.ReportService reportService =
+            new com.oliinyk.costumes.service.ReportService();
+    private RentalFacade rentalFacade;
+
+    private ObservableList<Costume> costumesData = FXCollections.observableArrayList();
+
+    @FXML
+    public void initialize() {
+        // Ініціалізація фасаду
+        rentalFacade =
+                new RentalFacade(
+                        new RentalService(
+                                new JdbcRentalRepository(), new JdbcRentalItemRepository()),
+                        new JdbcRentalRepository(),
+                        new JdbcCostumeRepository(),
+                        new JdbcUserRepository());
+
+        setupTables();
+        loadDataAsync();
+        setupSearch();
+
+        // Візуальний баг 1: Поворот тексту на осі X (Вимога UX)
+        javafx.scene.chart.CategoryAxis xAxis =
+                (javafx.scene.chart.CategoryAxis) popularityChart.getXAxis();
+        xAxis.setTickLabelRotation(-45);
+    }
+
+    private void setupTables() {
+        setupCostumesTable();
+        setupUsersTable();
+        setupRentalsTable();
+    }
+
+    private void setupCostumesTable() {
+        TableColumn<Costume, String> nameCol =
+                (TableColumn<Costume, String>) costumesTable.getColumns().get(0);
+        nameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
+
+        TableColumn<Costume, String> descCol =
+                (TableColumn<Costume, String>) costumesTable.getColumns().get(1);
+        descCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getDescription()));
+
+        TableColumn<Costume, String> priceCol =
+                (TableColumn<Costume, String>) costumesTable.getColumns().get(2);
+        priceCol.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                String.format("%.2f грн", data.getValue().getPricePerDay())));
+
+        // Додавання кнопок дій (Вимога 5.1 CRUD)
+        TableColumn<Costume, Void> actionCol =
+                (TableColumn<Costume, Void>) costumesTable.getColumns().get(3);
+        actionCol.setCellFactory(
+                param ->
+                        new javafx.scene.control.TableCell<>() {
+                            private final javafx.scene.control.Button editBtn =
+                                    new javafx.scene.control.Button();
+                            private final javafx.scene.control.Button deleteBtn =
+                                    new javafx.scene.control.Button();
+                            private final javafx.scene.layout.HBox pane =
+                                    new javafx.scene.layout.HBox(10, editBtn, deleteBtn);
+
+                            {
+                                editBtn.getStyleClass().addAll("button-icon", "flat", "accent");
+                                editBtn.setGraphic(
+                                        new org.kordamp.ikonli.javafx.FontIcon("fas-edit"));
+                                editBtn.setTooltip(new javafx.scene.control.Tooltip("Редагувати"));
+                                editBtn.setOnAction(
+                                        event -> {
+                                            Costume costume =
+                                                    getTableView().getItems().get(getIndex());
+                                            handleEditCostume(costume);
+                                        });
+
+                                deleteBtn.getStyleClass().addAll("button-icon", "flat", "danger");
+                                deleteBtn.setGraphic(
+                                        new org.kordamp.ikonli.javafx.FontIcon("fas-trash"));
+                                deleteBtn.setTooltip(new javafx.scene.control.Tooltip("Видалити"));
+                                deleteBtn.setOnAction(
+                                        event -> {
+                                            Costume costume =
+                                                    getTableView().getItems().get(getIndex());
+                                            handleDeleteCostume(costume);
+                                        });
+                                pane.setAlignment(javafx.geometry.Pos.CENTER);
+                            }
+
+                            @Override
+                            protected void updateItem(Void item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty) setGraphic(null);
+                                else setGraphic(pane);
+                            }
+                        });
+    }
+
+    @FXML
+    private void onAddCostumeClicked() {
+        showCostumeDialog(null);
+    }
+
+    private void handleEditCostume(Costume costume) {
+        showCostumeDialog(costume);
+    }
+
+    private void showCostumeDialog(Costume costume) {
+        try {
+            javafx.fxml.FXMLLoader loader =
+                    new javafx.fxml.FXMLLoader(getClass().getResource("/views/CostumeDialog.fxml"));
+            javafx.scene.layout.VBox page = loader.load();
+
+            javafx.stage.Stage dialogStage = new javafx.stage.Stage();
+            dialogStage.setTitle(costume == null ? "Додати костюм" : "Редагувати костюм");
+            dialogStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            dialogStage.initOwner(costumesTable.getScene().getWindow());
+            javafx.scene.Scene scene = new javafx.scene.Scene(page);
+            dialogStage.setScene(scene);
+
+            CostumeDialogController controller = loader.getController();
+            controller.setCostume(costume);
+
+            dialogStage.showAndWait();
+
+            if (controller.isSaveClicked()) {
+                Costume result = controller.getCostume();
+                if (costume == null) {
+                    costumeRepo.save(result);
+                } else {
+                    costumeRepo.update(result);
+                }
+                loadDataAsync();
+            }
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleDeleteCostume(Costume costume) {
+        javafx.scene.control.Alert alert =
+                new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Підтвердження видалення");
+        alert.setHeaderText("Видалити костюм: " + costume.getName() + "?");
+        alert.setContentText("Цю дію неможливо скасувати.");
+
+        alert.showAndWait()
+                .ifPresent(
+                        response -> {
+                            if (response == javafx.scene.control.ButtonType.OK) {
+                                try {
+                                    costumeRepo.delete(costume.getId());
+                                    loadDataAsync(); // Перезавантаження даних
+                                } catch (Exception e) {
+                                    // Критичний баг 2: Обробка
+                                    // SQLIntegrityConstraintViolationException (Вимога
+                                    // стабільності)
+                                    javafx.scene.control.Alert errorAlert =
+                                            new javafx.scene.control.Alert(
+                                                    javafx.scene.control.Alert.AlertType.ERROR);
+                                    errorAlert.setTitle("Помилка видалення");
+                                    errorAlert.setHeaderText(null);
+                                    errorAlert.setContentText(
+                                            "Неможливо видалити костюм, оскільки він присутній в історії оренд користувачів");
+                                    errorAlert.showAndWait();
+                                }
+                            }
+                        });
+    }
+
+    private void setupUsersTable() {
+        TableColumn<User, String> emailCol =
+                (TableColumn<User, String>) usersTable.getColumns().get(0);
+        emailCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getEmail()));
+
+        TableColumn<User, String> roleCol =
+                (TableColumn<User, String>) usersTable.getColumns().get(1);
+        roleCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getRole()));
+
+        TableColumn<User, String> verifiedCol =
+                (TableColumn<User, String>) usersTable.getColumns().get(2);
+        verifiedCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().isVerified() ? "Так" : "Ні"));
+        verifiedCol.setCellFactory(
+                column ->
+                        new javafx.scene.control.TableCell<>() {
+                            @Override
+                            protected void updateItem(String val, boolean empty) {
+                                super.updateItem(val, empty);
+                                if (empty || val == null) {
+                                    setGraphic(null);
+                                } else {
+                                    javafx.scene.control.Label badge =
+                                            new javafx.scene.control.Label(val);
+                                    badge.getStyleClass()
+                                            .addAll(
+                                                    "badge",
+                                                    "Так".equals(val) ? "success" : "subtle");
+                                    setGraphic(badge);
+                                }
+                            }
+                        });
+
+        TableColumn<User, String> blockedCol = new TableColumn<>("Заблоковано");
+        blockedCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().isBlocked() ? "Так" : "Ні"));
+        blockedCol.setCellFactory(
+                column ->
+                        new javafx.scene.control.TableCell<>() {
+                            @Override
+                            protected void updateItem(String val, boolean empty) {
+                                super.updateItem(val, empty);
+                                if (empty || val == null) {
+                                    setGraphic(null);
+                                } else {
+                                    javafx.scene.control.Label badge =
+                                            new javafx.scene.control.Label(val);
+                                    badge.getStyleClass()
+                                            .addAll(
+                                                    "badge",
+                                                    "Так".equals(val) ? "danger" : "subtle");
+                                    setGraphic(badge);
+                                }
+                            }
+                        });
+
+        TableColumn<User, Void> actionCol = new TableColumn<>("Дії");
+        actionCol.setCellFactory(
+                param ->
+                        new javafx.scene.control.TableCell<>() {
+                            private final javafx.scene.control.Button blockBtn =
+                                    new javafx.scene.control.Button();
+
+                            {
+                                blockBtn.getStyleClass().add("button-icon");
+                                blockBtn.setOnAction(
+                                        event -> {
+                                            User user = getTableView().getItems().get(getIndex());
+                                            handleToggleBlock(user);
+                                        });
+                            }
+
+                            @Override
+                            protected void updateItem(Void item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty) {
+                                    setGraphic(null);
+                                } else {
+                                    User user = getTableView().getItems().get(getIndex());
+                                    if (user.isBlocked()) {
+                                        // Заблокований -> дія "Розблокувати" (Відкритий замок,
+                                        // зелений)
+                                        blockBtn.setGraphic(
+                                                new org.kordamp.ikonli.javafx.FontIcon(
+                                                        "fas-lock-open"));
+                                        blockBtn.getStyleClass()
+                                                .setAll("button-icon", "flat", "success");
+                                        blockBtn.setTooltip(
+                                                new javafx.scene.control.Tooltip("Розблокувати"));
+                                    } else {
+                                        // Активний -> дія "Заблокувати" (Закритий замок, червоний)
+                                        blockBtn.setGraphic(
+                                                new org.kordamp.ikonli.javafx.FontIcon("fas-lock"));
+                                        blockBtn.getStyleClass()
+                                                .setAll("button-icon", "flat", "danger");
+                                        blockBtn.setTooltip(
+                                                new javafx.scene.control.Tooltip("Заблокувати"));
+                                    }
+                                    setGraphic(blockBtn);
+                                }
+                            }
+                        });
+
+        usersTable.getColumns().addAll(blockedCol, actionCol);
+    }
+
+    private void handleToggleBlock(User user) {
+        user.setBlocked(!user.isBlocked());
+        userRepo.update(user);
+        usersTable.refresh(); // Миттєве оновлення UI (Вимога розділу 6)
+    }
+
+    private void setupRentalsTable() {
+        TableColumn<RentalDTO, String> userCol =
+                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(0);
+        userCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getUserEmail()));
+
+        TableColumn<RentalDTO, String> startCol =
+                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(1);
+        startCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getStartDate().toString()));
+
+        TableColumn<RentalDTO, String> endCol =
+                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(2);
+        endCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getEndDate().toString()));
+
+        TableColumn<RentalDTO, String> statusCol =
+                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(3);
+        statusCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getStatus()));
+        statusCol.setCellFactory(
+                column ->
+                        new javafx.scene.control.TableCell<>() {
+                            @Override
+                            protected void updateItem(String status, boolean empty) {
+                                super.updateItem(status, empty);
+                                if (empty || status == null) {
+                                    setText(null);
+                                    setGraphic(null);
+                                } else {
+                                    javafx.scene.control.Label badge =
+                                            new javafx.scene.control.Label();
+                                    switch (status) {
+                                        case "RESERVED" -> {
+                                            badge.setText("Заброньовано");
+                                            badge.getStyleClass().addAll("badge", "accent");
+                                        }
+                                        case "ISSUED", "ACTIVE" -> {
+                                            badge.setText("Видано / Активна");
+                                            badge.getStyleClass().addAll("badge", "warning");
+                                        }
+                                        case "OVERDUE" -> {
+                                            badge.setText("Прострочено");
+                                            badge.getStyleClass().addAll("badge", "danger");
+                                        }
+                                        case "RETURNED", "COMPLETED" -> {
+                                            badge.setText("Повернуто / Завершена");
+                                            badge.getStyleClass().addAll("badge", "success");
+                                        }
+                                        default -> {
+                                            badge.setText(status);
+                                            badge.getStyleClass().add("badge");
+                                        }
+                                    }
+                                    setGraphic(badge);
+                                }
+                            }
+                        });
+
+        TableColumn<RentalDTO, String> totalCol =
+                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(4);
+        totalCol.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                String.format("%.2f грн", data.getValue().getTotalPrice())));
+
+        TableColumn<RentalDTO, String> penaltyCol = new TableColumn<>("Штраф");
+        penaltyCol.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                String.format("%.2f грн", data.getValue().getPenaltyAmount())));
+        penaltyCol.setPrefWidth(100);
+
+        // Додавання ComboBox для зміни статусу (Блок 2: Машина станів)
+        TableColumn<RentalDTO, Void> actionCol = new TableColumn<>("Дії");
+        actionCol.setPrefWidth(220);
+        actionCol.setCellFactory(
+                param ->
+                        new javafx.scene.control.TableCell<>() {
+                            private final ComboBox<String> statusCombo = new ComboBox<>();
+
+                            {
+                                statusCombo.getItems().addAll("RESERVED", "ISSUED", "RETURNED");
+                                statusCombo.getStyleClass().add("small");
+
+                                // UX баг 3: StringConverter для локалізації статусів (Вимога UX)
+                                statusCombo.setConverter(
+                                        new javafx.util.StringConverter<>() {
+                                            @Override
+                                            public String toString(String status) {
+                                                if (status == null) return "";
+                                                return switch (status) {
+                                                    case "RESERVED" -> "Заброньовано";
+                                                    case "ISSUED" -> "Видано";
+                                                    case "RETURNED" -> "Повернуто";
+                                                    case "ACTIVE" -> "Активна";
+                                                    case "COMPLETED" -> "Завершена";
+                                                    case "OVERDUE" -> "Прострочено";
+                                                    default -> status;
+                                                };
+                                            }
+
+                                            @Override
+                                            public String fromString(String string) {
+                                                if (string == null) return null;
+                                                return switch (string) {
+                                                    case "Заброньовано" -> "RESERVED";
+                                                    case "Видано" -> "ISSUED";
+                                                    case "Повернуто" -> "RETURNED";
+                                                    case "Активна" -> "ACTIVE";
+                                                    case "Завершена" -> "COMPLETED";
+                                                    case "Прострочено" -> "OVERDUE";
+                                                    default -> string;
+                                                };
+                                            }
+                                        });
+
+                                statusCombo.setOnAction(
+                                        event -> {
+                                            RentalDTO rental =
+                                                    getTableView().getItems().get(getIndex());
+                                            String newValue = statusCombo.getValue();
+                                            if (newValue != null
+                                                    && !newValue.equals(rental.getStatus())) {
+                                                handleStatusChange(rental, newValue);
+                                            }
+                                        });
+                            }
+
+                            @Override
+                            protected void updateItem(Void item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty) {
+                                    setGraphic(null);
+                                } else {
+                                    RentalDTO rental = getTableView().getItems().get(getIndex());
+                                    statusCombo.setValue(rental.getStatus());
+                                    setGraphic(statusCombo);
+                                }
+                            }
+                        });
+        rentalsTable.getColumns().addAll(penaltyCol, actionCol);
+    }
+
+    @FXML
+    private void onExportRentalsClicked() {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Зберегти звіт");
+        fileChooser
+                .getExtensionFilters()
+                .add(new javafx.stage.FileChooser.ExtensionFilter("CSV файли", "*.csv"));
+        fileChooser.setInitialFileName("rentals_report_" + java.time.LocalDate.now() + ".csv");
+
+        java.io.File file = fileChooser.showSaveDialog(rentalsTable.getScene().getWindow());
+        if (file != null) {
+            try {
+                reportService.exportRentalsToCsv(rentalsTable.getItems(), file);
+                javafx.scene.control.Alert alert =
+                        new javafx.scene.control.Alert(
+                                javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Успіх");
+                alert.setHeaderText(null);
+                alert.setContentText("Звіт успішно експортовано у " + file.getName());
+                alert.showAndWait();
+            } catch (java.io.IOException e) {
+                e.printStackTrace();
+                javafx.scene.control.Alert alert =
+                        new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Помилка");
+                alert.setHeaderText("Не вдалося зберегти файл");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        }
+    }
+
+    private void handleStatusChange(RentalDTO rentalDto, String newStatus) {
+        rentalFacade.updateStatus(rentalDto.getId(), newStatus);
+        loadDataAsync();
+    }
+
+    private void updateCharts(List<RentalDTO> rentals) {
+        // Статистика за статусами (Блок 3: Дашборд)
+        java.util.Map<String, Long> statusCounts =
+                rentals.stream()
+                        .collect(
+                                java.util.stream.Collectors.groupingBy(
+                                        RentalDTO::getStatus,
+                                        java.util.stream.Collectors.counting()));
+
+        statusChart.getData().clear();
+        // Візуальний баг 3: Стабільний розмір (Вимога UX)
+        statusChart.setLabelsVisible(false);
+        statusChart.setLegendVisible(true);
+
+        statusCounts.forEach(
+                (status, count) -> {
+                    // UX баг 2: Локалізація в графіках (Вимога UX)
+                    String localizedStatus =
+                            switch (status) {
+                                case "RESERVED" -> "Заброньовано";
+                                case "ISSUED" -> "Видано";
+                                case "RETURNED" -> "Повернуто";
+                                case "COMPLETED" -> "Завершена";
+                                case "ACTIVE" -> "Активна";
+                                case "OVERDUE" -> "Прострочено";
+                                default -> status;
+                            };
+                    statusChart
+                            .getData()
+                            .add(new javafx.scene.chart.PieChart.Data(localizedStatus, count));
+                });
+
+        // Популярність костюмів (Топ-5)
+        java.util.Map<String, Long> costumePopularity =
+                rentals.stream()
+                        .flatMap(r -> r.getCostumeNames().stream())
+                        .collect(
+                                java.util.stream.Collectors.groupingBy(
+                                        s -> s, java.util.stream.Collectors.counting()));
+
+        popularityChart.getData().clear();
+        // Візуальний баг 1: Налізання тексту та баг кешування (Вимога UX)
+        javafx.scene.chart.CategoryAxis xAxis =
+                (javafx.scene.chart.CategoryAxis) popularityChart.getXAxis();
+        xAxis.getCategories().clear(); // Очищення кешу
+        xAxis.setAnimated(false); // Вимикаємо анімацію лише для осі X
+        xAxis.setTickLabelRotation(-45);
+        popularityChart.setAnimated(true); // Залишаємо загальну анімацію для стовпців
+
+        javafx.scene.chart.XYChart.Series<String, Number> series =
+                new javafx.scene.chart.XYChart.Series<>();
+        series.setName("Оренди");
+        costumePopularity.entrySet().stream()
+                .sorted(java.util.Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .forEach(
+                        entry -> {
+                            // Візуальний баг 1: Обрізання довгих назв (Вимога UX)
+                            String name = entry.getKey();
+                            String displayName =
+                                    name.length() > 12 ? name.substring(0, 12) + ".." : name;
+                            series.getData()
+                                    .add(
+                                            new javafx.scene.chart.XYChart.Data<>(
+                                                    displayName, entry.getValue()));
+                        });
+
+        popularityChart.getData().add(series);
+    }
+
+    private void loadDataAsync() {
+        // Асинхронне завантаження (Вимога розділу 4.4.5)
+        Task<Void> loadTask =
+                new Task<>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        List<Costume> costumes = costumeRepo.findAll();
+                        List<User> users = userRepo.findAll();
+                        List<RentalDTO> rentals = rentalFacade.getAllRentals();
+
+                        // Оновлення UI в основному потоці
+                        javafx.application.Platform.runLater(
+                                () -> {
+                                    costumesData.setAll(costumes);
+                                    usersTable.setItems(FXCollections.observableArrayList(users));
+                                    rentalsTable.setItems(
+                                            FXCollections.observableArrayList(rentals));
+                                    // Наповнення графіків дашборду (Блок 3: Дашборд)
+                                    updateCharts(rentals);
+                                });
+                        return null;
+                    }
+                };
+        new Thread(loadTask).start();
+    }
+
+    private void setupSearch() {
+        // Реалізація пошуку (Вимога розділу 5.2)
+        FilteredList<Costume> filteredData = new FilteredList<>(costumesData, p -> true);
+        costumeSearchField
+                .textProperty()
+                .addListener(
+                        (observable, oldValue, newValue) -> {
+                            filteredData.setPredicate(
+                                    costume -> {
+                                        if (newValue == null || newValue.isEmpty()) return true;
+                                        String lowerCaseFilter = newValue.toLowerCase();
+                                        return costume.getName()
+                                                .toLowerCase()
+                                                .contains(lowerCaseFilter);
+                                    });
+                        });
+        costumesTable.setItems(filteredData);
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/BasketController.java =====
+
+package com.oliinyk.costumes.view;
+
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.viewmodel.BasketViewModel;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import javafx.concurrent.Task;
+import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.Separator;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+
+/** Контролер кошика. Реалізує асинхронну логіку оформлення замовлення (Вимога розділу 4.4.5). */
+public class BasketController {
+
+    @FXML private ListView<String> basketItems;
+    @FXML private DatePicker startDatePicker;
+    @FXML private DatePicker endDatePicker;
+    @FXML private Label totalPriceLabel;
+    @FXML private Label depositLabel;
+    @FXML private Label discountLabel;
+
+    private BasketViewModel viewModel;
+
+    public void setViewModel(BasketViewModel viewModel) {
+        this.viewModel = viewModel;
+        setupBindings();
+        refreshList();
+    }
+
+    private void setupBindings() {
+        startDatePicker.valueProperty().bindBidirectional(viewModel.startDateProperty());
+        endDatePicker.valueProperty().bindBidirectional(viewModel.endDateProperty());
+        totalPriceLabel.textProperty().bind(viewModel.totalPriceProperty());
+        depositLabel.textProperty().bind(viewModel.depositTotalProperty());
+        discountLabel.textProperty().bind(viewModel.discountAmountProperty());
+
+        // Налаштування обмежень для дат (Вимога UI/UX)
+        startDatePicker.setDayCellFactory(
+                picker ->
+                        new javafx.scene.control.DateCell() {
+                            @Override
+                            public void updateItem(LocalDate date, boolean empty) {
+                                super.updateItem(date, empty);
+                                setDisable(empty || date.isBefore(LocalDate.now()));
+                            }
+                        });
+
+        endDatePicker.setDayCellFactory(
+                picker ->
+                        new javafx.scene.control.DateCell() {
+                            @Override
+                            public void updateItem(LocalDate date, boolean empty) {
+                                super.updateItem(date, empty);
+                                setDisable(
+                                        empty
+                                                || date.isBefore(
+                                                        startDatePicker.getValue().plusDays(1)));
+                            }
+                        });
+
+        startDatePicker
+                .valueProperty()
+                .addListener(
+                        (obs, oldVal, newVal) -> {
+                            if (newVal != null
+                                    && (endDatePicker.getValue() == null
+                                            || endDatePicker
+                                                    .getValue()
+                                                    .isBefore(newVal.plusDays(1)))) {
+                                endDatePicker.setValue(newVal.plusDays(1));
+                            }
+                            viewModel.recalculate();
+                        });
+        endDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> viewModel.recalculate());
+    }
+
+    private void refreshList() {
+        basketItems.getItems().clear();
+        for (Costume c : viewModel.getItems()) {
+            basketItems
+                    .getItems()
+                    .add(String.format("%s - %.2f грн/день", c.getName(), c.getPricePerDay()));
+        }
+    }
+
+    @FXML
+    private void onRentClicked() {
+        // Асинхронне оформлення замовлення (Вимога розділу 4.4.5)
+        Task<Void> checkoutTask =
+                new Task<>() {
+                    @Override
+                    protected Void call() throws Exception {
+                        viewModel.checkout();
+                        return null;
+                    }
+                };
+        checkoutTask.setOnSucceeded(
+                e -> {
+                    // Знімок даних кошика до очищення (Блок 1: Електронний чек)
+                    List<Costume> snapshot = viewModel.getItemsSnapshot();
+                    long days =
+                            ChronoUnit.DAYS.between(
+                                    startDatePicker.getValue(), endDatePicker.getValue());
+                    if (days <= 0) days = 1;
+                    BigDecimal rentalTotal = viewModel.getRentalTotal(days);
+                    BigDecimal deposit = viewModel.getTotalDeposit();
+                    BigDecimal discount = viewModel.getDiscount(days);
+                    BigDecimal grandTotal = rentalTotal.add(deposit);
+
+                    refreshList();
+
+                    // Показати електронний чек
+                    showReceiptDialog(
+                            snapshot,
+                            startDatePicker.getValue(),
+                            endDatePicker.getValue(),
+                            rentalTotal,
+                            deposit,
+                            discount,
+                            grandTotal);
+
+                    // Оновлення стану через SessionManager
+                    com.oliinyk.costumes.service.SessionManager.getInstance()
+                            .viewModeProperty()
+                            .set(
+                                    com.oliinyk.costumes.service.SessionManager.getInstance()
+                                            .viewModeProperty()
+                                            .get());
+                });
+
+        checkoutTask.setOnFailed(
+                e -> {
+                    Throwable ex = checkoutTask.getException();
+                    showAlert("Помилка", ex.getMessage(), Alert.AlertType.ERROR);
+                });
+
+        // Запуск таска у фоновому потоці
+        new Thread(checkoutTask).start();
+    }
+
+    private void showAlert(String title, String content, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    /**
+     * Показує модальне вікно електронного чеку після успішного оформлення оренди. Вікно генерується
+     * програмно через компоненти JavaFX (без FXML).
+     */
+    private void showReceiptDialog(
+            List<Costume> items,
+            LocalDate start,
+            LocalDate end,
+            BigDecimal rentalTotal,
+            BigDecimal deposit,
+            BigDecimal discount,
+            BigDecimal grandTotal) {
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        long days = ChronoUnit.DAYS.between(start, end);
+        if (days <= 0) days = 1;
+
+        // ── Заголовок чеку ──
+        Label titleIcon = new Label("\uD83E\uDDFE");
+        titleIcon.setStyle("-fx-font-size: 28px;");
+        Label titleLabel = new Label("Електронний чек");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        HBox titleBox = new HBox(10, titleIcon, titleLabel);
+        titleBox.setAlignment(Pos.CENTER);
+
+        Label subLabel = new Label("Карнавальна крамниця — оренда костюмів");
+        subLabel.setStyle("-fx-text-fill: -color-fg-muted; -fx-font-size: 12px;");
+        subLabel.setAlignment(Pos.CENTER);
+        subLabel.setMaxWidth(Double.MAX_VALUE);
+
+        // ── Дати ──
+        Label datesLabel =
+                new Label(
+                        "\uD83D\uDCC5  "
+                                + start.format(fmt)
+                                + "  →  "
+                                + end.format(fmt)
+                                + "   ("
+                                + days
+                                + " дн.)");
+        datesLabel.setStyle("-fx-font-size: 13px;");
+
+        // ── Список костюмів ──
+        VBox itemsBox = new VBox(6);
+        for (Costume c : items) {
+            BigDecimal lineTotal = c.getPricePerDay().multiply(BigDecimal.valueOf(days));
+            Label row =
+                    new Label(
+                            String.format(
+                                    "• %s  —  %.2f грн/день  ×%d  =  %.2f грн",
+                                    c.getName(), c.getPricePerDay(), days, lineTotal));
+            row.setStyle("-fx-font-size: 13px;");
+            itemsBox.getChildren().add(row);
+        }
+
+        // ── Фінансова зведення ──
+        VBox summaryBox = new VBox(8);
+        summaryBox.setStyle(
+                "-fx-background-color: -color-bg-subtle;"
+                        + "-fx-background-radius: 8;"
+                        + "-fx-padding: 12;");
+
+        summaryBox
+                .getChildren()
+                .addAll(
+                        buildSummaryRow(
+                                "Вартість оренди:", String.format("%.2f грн", rentalTotal), false),
+                        buildSummaryRow("Застава:", String.format("%.2f грн", deposit), false),
+                        buildSummaryRow(
+                                "Знижка (10% від 3+ дн.):",
+                                String.format("-%.2f грн", discount),
+                                discount.compareTo(BigDecimal.ZERO) > 0),
+                        new Separator(),
+                        buildSummaryRow(
+                                "До сплати:", String.format("%.2f грн", grandTotal), false));
+
+        // Виділити підсумок жирним
+        HBox totalRow = (HBox) summaryBox.getChildren().get(summaryBox.getChildren().size() - 1);
+        totalRow.getChildren()
+                .forEach(
+                        node -> {
+                            if (node instanceof Label lbl) {
+                                lbl.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+                            }
+                        });
+
+        // ── Кнопка закриття ──
+        Button closeBtn = new Button("Закрити");
+        closeBtn.getStyleClass().addAll("button", "accent");
+        closeBtn.setPrefWidth(160);
+
+        // ── Складання макету ──
+        VBox root =
+                new VBox(
+                        14,
+                        titleBox,
+                        subLabel,
+                        new Separator(),
+                        datesLabel,
+                        new Separator(),
+                        itemsBox,
+                        new Separator(),
+                        summaryBox,
+                        closeBtn);
+        root.setPadding(new Insets(24));
+        root.setAlignment(Pos.TOP_CENTER);
+        root.setStyle("-fx-background-color: -color-bg-default;");
+        root.setPrefWidth(460);
+
+        Stage dialog = new Stage();
+        dialog.setTitle("Електронний чек");
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initOwner(basketItems.getScene().getWindow());
+        dialog.setResizable(false);
+
+        closeBtn.setOnAction(ev -> dialog.close());
+
+        Scene scene = new Scene(root);
+        // Успадкувати стилі з головного вікна
+        scene.getStylesheets().addAll(basketItems.getScene().getStylesheets());
+        dialog.setScene(scene);
+        dialog.showAndWait();
+    }
+
+    /** Будує рядок зведення (label + значення) для чеку. */
+    private HBox buildSummaryRow(String label, String value, boolean isDiscount) {
+        Label left = new Label(label);
+        left.setStyle("-fx-font-size: 13px;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Label right = new Label(value);
+        right.setStyle(
+                "-fx-font-size: 13px;" + (isDiscount ? " -fx-text-fill: -color-success-fg;" : ""));
+
+        HBox row = new HBox(spacer);
+        row.getChildren().add(0, left);
+        row.getChildren().add(right);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/CatalogController.java =====
+
+package com.oliinyk.costumes.view;
+
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.repository.JdbcRentalRepository;
+import com.oliinyk.costumes.service.SessionManager;
+import com.oliinyk.costumes.viewmodel.CatalogViewModel;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
+import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
+
+/**
+ * Контролер каталогу костюмів. Відповідає за відображення списку доступних костюмів та їх
+ * фільтрацію.
+ */
+public class CatalogController {
+
+    @FXML private TilePane costumesGrid;
+    @FXML private TextField searchField;
+    @FXML private DatePicker startDatePicker;
+    @FXML private DatePicker endDatePicker;
+    @FXML private Button gridModeBtn;
+    @FXML private Button listModeBtn;
+
+    private CatalogViewModel viewModel;
+    private final JdbcRentalRepository rentalRepo = new JdbcRentalRepository();
+
+    /** Встановлює ViewModel та ініціалізує дані. */
+    public void setViewModel(CatalogViewModel viewModel) {
+        this.viewModel = viewModel;
+        setupUI();
+        setupSearch();
+        setupViewModeListener();
+        populateGrid(viewModel.getCostumes());
+    }
+
+    private void setupUI() {
+        startDatePicker.setValue(LocalDate.now());
+        endDatePicker.setValue(LocalDate.now().plusDays(1));
+
+        // Налаштування обмежень для дат (Вимога UI/UX)
+        startDatePicker.setDayCellFactory(
+                picker ->
+                        new DateCell() {
+                            @Override
+                            public void updateItem(LocalDate date, boolean empty) {
+                                super.updateItem(date, empty);
+                                setDisable(empty || date.isBefore(LocalDate.now()));
+                            }
+                        });
+
+        endDatePicker.setDayCellFactory(
+                picker ->
+                        new DateCell() {
+                            @Override
+                            public void updateItem(LocalDate date, boolean empty) {
+                                super.updateItem(date, empty);
+                                setDisable(
+                                        empty
+                                                || date.isBefore(
+                                                        startDatePicker.getValue().plusDays(1)));
+                            }
+                        });
+
+        startDatePicker
+                .valueProperty()
+                .addListener(
+                        (obs, old, newVal) -> {
+                            if (newVal != null
+                                    && (endDatePicker.getValue() == null
+                                            || endDatePicker
+                                                    .getValue()
+                                                    .isBefore(newVal.plusDays(1)))) {
+                                endDatePicker.setValue(newVal.plusDays(1));
+                            }
+                            refreshCatalog();
+                        });
+        endDatePicker.valueProperty().addListener((obs, old, newVal) -> refreshCatalog());
+
+        gridModeBtn.setOnAction(e -> SessionManager.getInstance().viewModeProperty().set("GRID"));
+        listModeBtn.setOnAction(e -> SessionManager.getInstance().viewModeProperty().set("LIST"));
+    }
+
+    private void refreshCatalog() {
+        populateGrid(viewModel.getCostumes());
+    }
+
+    private void setupViewModeListener() {
+        SessionManager.getInstance()
+                .viewModeProperty()
+                .addListener(
+                        (obs, oldVal, newVal) -> {
+                            populateGrid(viewModel.getCostumes());
+                        });
+    }
+
+    private void setupSearch() {
+        // Реалізація динамічного пошуку (Вимога 5.2)
+        searchField
+                .textProperty()
+                .addListener(
+                        (obs, oldText, newText) -> {
+                            populateGrid(viewModel.getCostumes());
+                        });
+    }
+
+    private void populateGrid(List<Costume> costumes) {
+        costumesGrid.getChildren().clear();
+        String viewMode = SessionManager.getInstance().viewModeProperty().get();
+
+        if ("LIST".equals(viewMode)) {
+            costumesGrid.setPrefColumns(1);
+        } else {
+            costumesGrid.setPrefColumns(3);
+        }
+
+        // Фільтрація за пошуком
+        String filter = searchField.getText();
+        List<Costume> filtered =
+                costumes.stream()
+                        .filter(
+                                c ->
+                                        filter == null
+                                                || filter.isEmpty()
+                                                || c.getName()
+                                                        .toLowerCase()
+                                                        .contains(filter.toLowerCase()))
+                        .collect(Collectors.toList());
+
+        for (Costume costume : filtered) {
+            costumesGrid.getChildren().add(createCostumeCard(costume, viewMode));
+        }
+    }
+
+    private VBox createCostumeCard(Costume costume, String viewMode) {
+        VBox card = new VBox(15);
+        card.setPadding(new Insets(20));
+        card.getStyleClass().add("card");
+
+        // Перевірка доступності
+        boolean isAvailable = true;
+        if (startDatePicker.getValue() != null && endDatePicker.getValue() != null) {
+            isAvailable =
+                    rentalRepo.isCostumeAvailable(
+                            costume.getId(), startDatePicker.getValue(), endDatePicker.getValue());
+        }
+
+        if ("LIST".equals(viewMode)) {
+            card.setStyle(
+                    "-fx-background-color: -color-bg-subtle; -fx-background-radius: 12; -fx-border-color: -color-border-default; -fx-border-radius: 12; -fx-border-width: 1; -fx-pref-width: 800; -fx-pref-height: 120;");
+            card.setAlignment(Pos.CENTER_LEFT);
+        } else {
+            card.setStyle(
+                    "-fx-background-color: -color-bg-subtle; -fx-background-radius: 12; -fx-border-color: -color-border-default; -fx-border-radius: 12; -fx-border-width: 1; -fx-pref-width: 280; -fx-pref-height: 250;");
+            card.setAlignment(Pos.CENTER);
+        }
+
+        if (!isAvailable) {
+            card.setOpacity(0.6);
+        }
+
+        Label nameLabel = new Label(costume.getName());
+        nameLabel.setStyle(
+                "-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;");
+
+        ImageView imageView = new ImageView();
+        if (costume.getImagePath() != null && !costume.getImagePath().isEmpty()) {
+            try {
+                String path = costume.getImagePath();
+                // 1. Спробувати завантажити як ресурс з classpath
+                java.net.URL resourceUrl = getClass().getResource(path);
+                if (resourceUrl != null) {
+                    imageView.setImage(new Image(resourceUrl.toExternalForm(), true));
+                } else {
+                    // 2. Спробувати завантажити як файл із файлової системи
+                    java.io.File file = new java.io.File(path);
+                    if (file.exists()) {
+                        imageView.setImage(new Image(file.toURI().toString(), true));
+                    }
+                }
+
+                imageView.setFitWidth("LIST".equals(viewMode) ? 80 : 150);
+                imageView.setFitHeight("LIST".equals(viewMode) ? 80 : 150);
+                imageView.setPreserveRatio(true);
+            } catch (Exception ex) {
+                // Логування помилки завантаження зображення
+            }
+        }
+
+        Label priceLabel = new Label(String.format("%.2f", costume.getPricePerDay()) + " грн/день");
+        priceLabel.setStyle(
+                "-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: -color-accent-emphasis;");
+
+        Button addToCartBtn = new Button(isAvailable ? "Додати в кошик" : "Недоступно");
+        addToCartBtn.getStyleClass().add(isAvailable ? "accent" : "danger");
+        addToCartBtn.setDisable(!isAvailable);
+        addToCartBtn.setMaxWidth(Double.MAX_VALUE);
+        addToCartBtn.setOnAction(
+                e -> {
+                    viewModel.addToCart(costume);
+                    addToCartBtn.setText("Додано!");
+                    addToCartBtn.getStyleClass().remove("accent");
+                    addToCartBtn.getStyleClass().add("success");
+                    addToCartBtn.setDisable(true);
+                });
+
+        if ("LIST".equals(viewMode)) {
+            javafx.scene.layout.HBox hBox =
+                    new javafx.scene.layout.HBox(
+                            20, imageView, nameLabel, priceLabel, addToCartBtn);
+            hBox.setAlignment(Pos.CENTER_LEFT);
+            javafx.scene.layout.HBox.setHgrow(nameLabel, javafx.scene.layout.Priority.ALWAYS);
+            nameLabel.setMaxWidth(Double.MAX_VALUE);
+            card.getChildren().add(hBox);
+        } else {
+            card.getChildren().addAll(imageView, nameLabel, priceLabel, addToCartBtn);
+        }
+
+        return card;
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/CostumeDialogController.java =====
+
+package com.oliinyk.costumes.view;
+
+import com.oliinyk.costumes.model.Category;
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.repository.JdbcCategoryRepository;
+import java.math.BigDecimal;
+import java.util.UUID;
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.stage.Stage;
+import javafx.util.StringConverter;
+
+/** Контролер діалогового вікна для додавання/редагування костюма. */
+public class CostumeDialogController {
+
+    @FXML private TextField nameField;
+    @FXML private TextArea descriptionArea;
+    @FXML private TextField priceField;
+    @FXML private TextField depositField;
+    @FXML private ComboBox<Category> categoryComboBox;
+    @FXML private TextField imagePathField;
+
+    private Costume costume;
+    private boolean saveClicked = false;
+    private final JdbcCategoryRepository categoryRepo = new JdbcCategoryRepository();
+    private final com.oliinyk.costumes.service.ImageService imageService =
+            new com.oliinyk.costumes.service.ImageService();
+
+    @FXML
+    public void initialize() {
+        imagePathField.setEditable(false);
+        imagePathField.setOnMouseClicked(
+                e -> {
+                    javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+                    fileChooser.setTitle("Оберіть зображення");
+                    fileChooser
+                            .getExtensionFilters()
+                            .addAll(
+                                    new javafx.stage.FileChooser.ExtensionFilter(
+                                            "Зображення", "*.png", "*.jpg", "*.jpeg"));
+
+                    java.io.File file =
+                            fileChooser.showOpenDialog(imagePathField.getScene().getWindow());
+                    if (file != null) {
+                        try {
+                            String savedPath = imageService.saveImage(file);
+                            imagePathField.setText(savedPath);
+                        } catch (Exception ex) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Помилка");
+                            alert.setHeaderText("Не вдалося зберегти зображення");
+                            alert.setContentText(ex.getMessage());
+                            alert.showAndWait();
+                        }
+                    }
+                });
+
+        categoryComboBox.setItems(FXCollections.observableArrayList(categoryRepo.findAll()));
+        categoryComboBox.setConverter(
+                new StringConverter<>() {
+                    @Override
+                    public String toString(Category category) {
+                        return category == null ? "" : category.getName();
+                    }
+
+                    @Override
+                    public Category fromString(String string) {
+                        return null;
+                    }
+                });
+    }
+
+    public void setCostume(Costume costume) {
+        this.costume = costume;
+        if (costume != null) {
+            nameField.setText(costume.getName());
+            descriptionArea.setText(costume.getDescription());
+            priceField.setText(String.format("%.2f", costume.getPricePerDay()).replace(',', '.'));
+            depositField.setText(
+                    String.format(
+                                    "%.2f",
+                                    costume.getDepositAmount() != null
+                                            ? costume.getDepositAmount()
+                                            : BigDecimal.ZERO)
+                            .replace(',', '.'));
+            imagePathField.setText(costume.getImagePath());
+
+            categoryComboBox.getItems().stream()
+                    .filter(c -> c.getId().equals(costume.getCategoryId()))
+                    .findFirst()
+                    .ifPresent(c -> categoryComboBox.setValue(c));
+        }
+    }
+
+    public boolean isSaveClicked() {
+        return saveClicked;
+    }
+
+    public Costume getCostume() {
+        if (costume == null) {
+            costume = Costume.builder().id(UUID.randomUUID()).build();
+        }
+
+        costume.setName(nameField.getText());
+        costume.setDescription(descriptionArea.getText());
+        costume.setPricePerDay(new BigDecimal(priceField.getText()));
+        costume.setDepositAmount(new BigDecimal(depositField.getText()));
+        costume.setImagePath(imagePathField.getText());
+        if (categoryComboBox.getValue() != null) {
+            costume.setCategoryId(categoryComboBox.getValue().getId());
+        }
+
+        return costume;
+    }
+
+    @FXML
+    private void onSaveClicked() {
+        if (validateInput()) {
+            saveClicked = true;
+            closeStage();
+        }
+    }
+
+    @FXML
+    private void onCancelClicked() {
+        closeStage();
+    }
+
+    private void closeStage() {
+        Stage stage = (Stage) nameField.getScene().getWindow();
+        stage.close();
+    }
+
+    private boolean validateInput() {
+        String errorMessage = "";
+
+        if (nameField.getText() == null || nameField.getText().isEmpty()) {
+            errorMessage += "Некоректна назва!\n";
+        }
+        if (priceField.getText() == null || priceField.getText().isEmpty()) {
+            errorMessage += "Некоректна ціна!\n";
+        } else {
+            try {
+                new BigDecimal(priceField.getText());
+            } catch (NumberFormatException e) {
+                errorMessage += "Ціна повинна бути числом!\n";
+            }
+        }
+        if (depositField.getText() == null || depositField.getText().isEmpty()) {
+            errorMessage += "Некоректна застава!\n";
+        } else {
+            try {
+                new BigDecimal(depositField.getText());
+            } catch (NumberFormatException e) {
+                errorMessage += "Застава повинна бути числом!\n";
+            }
+        }
+        if (categoryComboBox.getValue() == null) {
+            errorMessage += "Оберіть категорію!\n";
+        }
+
+        if (errorMessage.isEmpty()) {
+            return true;
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Помилка валідації");
+            alert.setHeaderText("Будь ласка, виправте помилки");
+            alert.setContentText(errorMessage);
+            alert.showAndWait();
+            return false;
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/LoginController.java =====
+
+package com.oliinyk.costumes.view;
+
+import atlantafx.base.theme.PrimerLight;
+import java.net.URL;
+import javafx.application.Application;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+
+public class LoginController {
+
+    @FXML private TextField emailField;
+    @FXML private PasswordField passwordField;
+    @FXML private Button loginButton;
+    @FXML private Label errorLabel;
+
+    private com.oliinyk.costumes.viewmodel.LoginViewModel viewModel;
+
+    @FXML
+    public void initialize() {
+        com.oliinyk.costumes.service.AuthService authService =
+                new com.oliinyk.costumes.service.AuthService(
+                        new com.oliinyk.costumes.repository.JdbcUserRepository(),
+                        new com.oliinyk.costumes.service.ConsoleEmailServiceImpl());
+
+        viewModel = new com.oliinyk.costumes.viewmodel.LoginViewModel(authService);
+
+        // Біндінг властивостей (Вимога 4.4.4)
+        emailField.textProperty().bindBidirectional(viewModel.emailProperty());
+        passwordField.textProperty().bindBidirectional(viewModel.passwordProperty());
+        errorLabel.textProperty().bind(viewModel.errorMessageProperty());
+
+        loginButton.setOnAction(e -> handleLogin());
+
+        // Реакція на успішний вхід
+        viewModel
+                .loginSuccessfulProperty()
+                .addListener(
+                        (obs, old, success) -> {
+                            if (success) {
+                                navigateToCatalog();
+                            }
+                        });
+    }
+
+    private void handleLogin() {
+        viewModel.attemptLogin();
+    }
+
+    private void navigateToCatalog() {
+        try {
+            URL fxmlLocation = getClass().getResource("/views/MainView.fxml");
+            if (fxmlLocation == null) {
+                throw new IllegalStateException("Не знайдено /views/MainView.fxml");
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            // Застосування теми за замовчуванням
+            Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+
+            // Заміна сцени на тому ж Stage
+            Stage stage = (Stage) loginButton.getScene().getWindow();
+            stage.setScene(new Scene(root, 1200, 800));
+
+            // Візуальний баг 3: Стиснутий Каталог по замовчуванню (Вимога UX)
+            stage.setMaximized(false);
+            stage.setWidth(1200);
+            stage.setHeight(800);
+            stage.setMinWidth(1000);
+            stage.setMinHeight(700);
+
+            stage.setTitle("Карнавальні Костюми");
+            stage.setResizable(true);
+            stage.centerOnScreen();
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorLabel.setText("Помилка відкриття каталогу: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void navigateToRegister() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/RegisterView.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) loginButton.getScene().getWindow();
+            stage.setScene(new Scene(root, 450, 400));
+            stage.setTitle("Реєстрація");
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorLabel.setText("Помилка відкриття форми: " + e.getMessage());
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/MainController.java =====
+
+package com.oliinyk.costumes.view;
+
+import com.oliinyk.costumes.repository.JdbcCostumeRepository;
+import com.oliinyk.costumes.repository.JdbcRentalItemRepository;
+import com.oliinyk.costumes.repository.JdbcRentalRepository;
+import com.oliinyk.costumes.repository.JdbcUserRepository;
+import com.oliinyk.costumes.service.RentalFacade;
+import com.oliinyk.costumes.service.RentalService;
+import com.oliinyk.costumes.viewmodel.BasketViewModel;
+import com.oliinyk.costumes.viewmodel.CatalogViewModel;
+import com.oliinyk.costumes.viewmodel.SettingsViewModel;
+import java.io.IOException;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+
+public class MainController {
+
+    @FXML private StackPane contentArea;
+
+    // Створюємо загальний ViewModel для каталогу, щоб не втрачати стан при перемиканні
+    @FXML private javafx.scene.control.Button btnAdmin;
+    @FXML private javafx.scene.control.Button btnMyRentals;
+
+    private final CatalogViewModel catalogViewModel = new CatalogViewModel();
+    private BasketViewModel basketViewModel;
+    private final SettingsViewModel settingsViewModel = new SettingsViewModel();
+    private RentalFacade rentalFacade;
+
+    @FXML
+    public void initialize() {
+        // Ініціалізація фасаду
+        rentalFacade =
+                new RentalFacade(
+                        new RentalService(
+                                new JdbcRentalRepository(), new JdbcRentalItemRepository()),
+                        new JdbcRentalRepository(),
+                        new JdbcCostumeRepository(),
+                        new JdbcUserRepository());
+
+        basketViewModel = new BasketViewModel(rentalFacade);
+
+        // Ховаємо кнопки залежно від ролі (Вимога розділу 2.2)
+        com.oliinyk.costumes.model.User user =
+                com.oliinyk.costumes.service.SessionManager.getInstance().getCurrentUser();
+
+        boolean isAdmin = user != null && "ADMIN".equals(user.getRole());
+
+        btnAdmin.setVisible(isAdmin);
+        btnAdmin.setManaged(isAdmin);
+
+        // "Мої оренди" доступні всім ролям (Вимога UI/UX)
+        btnMyRentals.setVisible(true);
+        btnMyRentals.setManaged(true);
+
+        showCatalog(); // Відкриваємо каталог при старті
+    }
+
+    @FXML
+    private void showCatalog() {
+        catalogViewModel.loadFromDatabase(); // Оновлюємо дані перед показом
+        loadView("/views/CatalogView.fxml", catalogViewModel);
+    }
+
+    @FXML
+    private void showBasket() {
+        basketViewModel.refresh();
+        loadView("/views/BasketView.fxml", basketViewModel);
+    }
+
+    @FXML
+    private void showMyRentals() {
+        loadView("/views/MyRentalsView.fxml", null);
+    }
+
+    @FXML
+    private void showSettings() {
+        loadView("/views/SettingsView.fxml", settingsViewModel);
+    }
+
+    @FXML
+    private void showAdminPanel() {
+        loadView("/views/AdminPanelView.fxml", null);
+    }
+
+    @FXML
+    private void logout() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/LoginView.fxml"));
+            Stage stage = (Stage) contentArea.getScene().getWindow();
+            stage.setScene(new Scene(loader.load(), 400, 350));
+
+            // Візуальний баг 2: Розмір вікна при Logout (Вимога UX)
+            stage.setMaximized(false);
+            stage.setWidth(600);
+            stage.setHeight(500);
+            stage.setMinWidth(600);
+            stage.setMinHeight(500);
+            stage.centerOnScreen();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadView(String fxmlPath, Object viewModel) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Node view = loader.load();
+
+            Object controller = loader.getController();
+            if (controller instanceof CatalogController) {
+                ((CatalogController) controller).setViewModel((CatalogViewModel) viewModel);
+            } else if (controller instanceof BasketController) {
+                ((BasketController) controller).setViewModel((BasketViewModel) viewModel);
+            } else if (controller instanceof SettingsController) {
+                ((SettingsController) controller).setViewModel((SettingsViewModel) viewModel);
+            }
+
+            contentArea.getChildren().setAll(view);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/MyRentalsController.java =====
+
+package com.oliinyk.costumes.view;
+
+import com.oliinyk.costumes.dto.RentalDTO;
+import com.oliinyk.costumes.repository.JdbcCostumeRepository;
+import com.oliinyk.costumes.repository.JdbcRentalItemRepository;
+import com.oliinyk.costumes.repository.JdbcRentalRepository;
+import com.oliinyk.costumes.repository.JdbcUserRepository;
+import com.oliinyk.costumes.service.RentalFacade;
+import com.oliinyk.costumes.service.RentalService;
+import com.oliinyk.costumes.service.SessionManager;
+import java.util.List;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.concurrent.Task;
+import javafx.fxml.FXML;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+
+/** Контролер особистого кабінету користувача. Відображає історію оренд. */
+public class MyRentalsController {
+
+    @FXML private TableView<RentalDTO> rentalsTable;
+    @FXML private TableColumn<RentalDTO, String> costumesCol;
+    @FXML private TableColumn<RentalDTO, String> startCol;
+    @FXML private TableColumn<RentalDTO, String> endCol;
+    @FXML private TableColumn<RentalDTO, String> statusCol;
+    @FXML private TableColumn<RentalDTO, String> totalCol;
+
+    private RentalFacade rentalFacade;
+
+    @FXML
+    public void initialize() {
+        rentalFacade =
+                new RentalFacade(
+                        new RentalService(
+                                new JdbcRentalRepository(), new JdbcRentalItemRepository()),
+                        new JdbcRentalRepository(),
+                        new JdbcCostumeRepository(),
+                        new JdbcUserRepository());
+
+        setupTable();
+        loadDataAsync();
+    }
+
+    private void setupTable() {
+        costumesCol.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                String.join(", ", data.getValue().getCostumeNames())));
+        startCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getStartDate().toString()));
+        endCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getEndDate().toString()));
+
+        statusCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().getStatus()));
+        statusCol.setCellFactory(
+                column ->
+                        new javafx.scene.control.TableCell<>() {
+                            @Override
+                            protected void updateItem(String status, boolean empty) {
+                                super.updateItem(status, empty);
+                                if (empty || status == null) {
+                                    setText(null);
+                                    setGraphic(null);
+                                } else {
+                                    javafx.scene.control.Label badge =
+                                            new javafx.scene.control.Label();
+                                    if ("ACTIVE".equals(status)) {
+                                        badge.setText("Активна");
+                                        badge.getStyleClass().addAll("badge", "accent");
+                                    } else if ("COMPLETED".equals(status)) {
+                                        badge.setText("Завершена");
+                                        badge.getStyleClass().addAll("badge", "success");
+                                    } else {
+                                        badge.setText(status);
+                                        badge.getStyleClass().add("badge");
+                                    }
+                                    setGraphic(badge);
+                                }
+                            }
+                        });
+
+        totalCol.setCellValueFactory(
+                data ->
+                        new SimpleStringProperty(
+                                String.format("%.2f грн", data.getValue().getTotalPrice())));
+    }
+
+    private void loadDataAsync() {
+        com.oliinyk.costumes.model.User user = SessionManager.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        Task<List<RentalDTO>> task =
+                new Task<>() {
+                    @Override
+                    protected List<RentalDTO> call() throws Exception {
+                        return rentalFacade.getRentalsByUserId(user.getId());
+                    }
+                };
+
+        task.setOnSucceeded(
+                e -> rentalsTable.setItems(FXCollections.observableArrayList(task.getValue())));
+        new Thread(task).start();
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/RegisterController.java =====
+
+package com.oliinyk.costumes.view;
+
+import java.io.IOException;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+public class RegisterController {
+
+    @FXML private VBox registerPane;
+    @FXML private VBox verifyPane;
+    @FXML private TextField emailField;
+    @FXML private PasswordField passwordField;
+    @FXML private TextField codeField;
+    @FXML private Label errorLabel;
+
+    private com.oliinyk.costumes.viewmodel.RegisterViewModel viewModel;
+
+    @FXML
+    public void initialize() {
+        com.oliinyk.costumes.service.AuthService authService =
+                new com.oliinyk.costumes.service.AuthService(
+                        new com.oliinyk.costumes.repository.JdbcUserRepository(),
+                        new com.oliinyk.costumes.service.ConsoleEmailServiceImpl());
+
+        viewModel = new com.oliinyk.costumes.viewmodel.RegisterViewModel(authService);
+
+        // Біндінг властивостей
+        emailField.textProperty().bindBidirectional(viewModel.emailProperty());
+        passwordField.textProperty().bindBidirectional(viewModel.passwordProperty());
+        codeField.textProperty().bindBidirectional(viewModel.codeProperty());
+        errorLabel.textProperty().bind(viewModel.errorMessageProperty());
+
+        // Реакція на успішну реєстрацію
+        viewModel
+                .registrationSuccessfulProperty()
+                .addListener(
+                        (obs, old, success) -> {
+                            if (success) {
+                                registerPane.setVisible(false);
+                                registerPane.setManaged(false);
+                                verifyPane.setVisible(true);
+                                verifyPane.setManaged(true);
+                            }
+                        });
+
+        // Реакція на успішну верифікацію
+        viewModel
+                .verificationSuccessfulProperty()
+                .addListener(
+                        (obs, old, success) -> {
+                            if (success) {
+                                errorLabel.setStyle("-fx-text-fill: -color-success-fg;");
+                                verifyPane.setVisible(false);
+                                verifyPane.setManaged(false);
+                                javafx.scene.control.Button backBtn =
+                                        new javafx.scene.control.Button("Повернутися до входу");
+                                backBtn.setOnAction(e -> navigateBack());
+                                backBtn.getStyleClass().add("accent");
+                                ((VBox) errorLabel.getParent()).getChildren().add(backBtn);
+                            }
+                        });
+    }
+
+    @FXML
+    private void handleRegister() {
+        viewModel.attemptRegister();
+    }
+
+    @FXML
+    private void handleVerify() {
+        viewModel.attemptVerify();
+    }
+
+    @FXML
+    private void navigateBack() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/views/LoginView.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) emailField.getScene().getWindow();
+            stage.setScene(new Scene(root, 400, 350));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/view/SettingsController.java =====
+
+package com.oliinyk.costumes.view;
+
+import atlantafx.base.theme.PrimerDark;
+import atlantafx.base.theme.PrimerLight;
+import com.oliinyk.costumes.viewmodel.SettingsViewModel;
+import javafx.application.Application;
+import javafx.fxml.FXML;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+
+/** Контролер налаштувань. Керує темою та режимом відображення каталогу. */
+public class SettingsController {
+
+    @FXML private ToggleButton themeToggle;
+    @FXML private ToggleButton gridToggle;
+    @FXML private ToggleButton listToggle;
+
+    private SettingsViewModel viewModel;
+
+    public void setViewModel(SettingsViewModel viewModel) {
+        this.viewModel = viewModel;
+        setupUI();
+    }
+
+    private void setupUI() {
+        // Налаштування теми
+        themeToggle.setSelected(viewModel.isDarkTheme());
+        updateThemeText();
+
+        themeToggle.setOnAction(
+                e -> {
+                    viewModel.setTheme(themeToggle.isSelected());
+                    if (themeToggle.isSelected()) {
+                        Application.setUserAgentStylesheet(
+                                new PrimerDark().getUserAgentStylesheet());
+                    } else {
+                        Application.setUserAgentStylesheet(
+                                new PrimerLight().getUserAgentStylesheet());
+                    }
+                    updateThemeText();
+                });
+
+        // Налаштування режиму каталогу
+        ToggleGroup viewGroup = new ToggleGroup();
+        gridToggle.setToggleGroup(viewGroup);
+        listToggle.setToggleGroup(viewGroup);
+
+        if (viewModel.isGridView()) {
+            gridToggle.setSelected(true);
+        } else {
+            listToggle.setSelected(true);
+        }
+    }
+
+    private void updateThemeText() {
+        themeToggle.setText(themeToggle.isSelected() ? "Вимкнути" : "Увімкнути");
+    }
+
+    @FXML
+    private void onGridViewSelected() {
+        viewModel.setViewMode(true);
+    }
+
+    @FXML
+    private void onListViewSelected() {
+        viewModel.setViewMode(false);
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/viewmodel/BasketViewModel.java =====
+
+package com.oliinyk.costumes.viewmodel;
+
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.model.User;
+import com.oliinyk.costumes.service.BasketService;
+import com.oliinyk.costumes.service.RentalFacade;
+import com.oliinyk.costumes.service.SessionManager;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+/** ViewModel для кошика. Інкапсулює бізнес-логіку та стан для BasketController. */
+public class BasketViewModel {
+
+    private final RentalFacade rentalFacade;
+    private final BasketService basketService = BasketService.getInstance();
+
+    private final ObservableList<Costume> items = FXCollections.observableArrayList();
+    private final ObjectProperty<LocalDate> startDate = new SimpleObjectProperty<>(LocalDate.now());
+    private final ObjectProperty<LocalDate> endDate =
+            new SimpleObjectProperty<>(LocalDate.now().plusDays(1));
+    private final StringProperty totalPrice = new SimpleStringProperty("0.00 грн");
+    private final StringProperty depositTotal = new SimpleStringProperty("0.00 грн");
+    private final StringProperty discountAmount = new SimpleStringProperty("0.00 грн");
+
+    /**
+     * Конструктор ViewModel кошика.
+     *
+     * @param rentalFacade фасад для оформлення оренди
+     */
+    public BasketViewModel(RentalFacade rentalFacade) {
+        this.rentalFacade = rentalFacade;
+        refresh();
+    }
+
+    /** Оновлює список елементів у кошику та перераховує вартість. */
+    public void refresh() {
+        items.setAll(basketService.getItems());
+        recalculate();
+    }
+
+    /** Перераховує загальну вартість оренди, заставу та знижку на основі вибраних дат. */
+    public void recalculate() {
+        if (startDate.get() != null && endDate.get() != null) {
+            long days = ChronoUnit.DAYS.between(startDate.get(), endDate.get());
+            if (days <= 0) days = 1;
+
+            BigDecimal rentalTotal = basketService.calculateRentalTotal(days);
+            BigDecimal deposit = basketService.calculateTotalDeposit();
+            BigDecimal discount = basketService.calculateDiscount(days);
+
+            totalPrice.set(String.format("%.2f грн", rentalTotal.add(deposit)));
+            depositTotal.set(String.format("%.2f грн", deposit));
+            discountAmount.set(String.format("-%.2f грн", discount));
+        }
+    }
+
+    /**
+     * Оформлює замовлення (checkout). Створює записи про оренду в базі даних та очищує кошик.
+     *
+     * @throws IllegalStateException якщо користувач не авторизований або кошик порожній
+     */
+    public void checkout() {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (user == null) {
+            throw new IllegalStateException("Будь ласка, авторизуйтесь.");
+        }
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Кошик порожній.");
+        }
+
+        rentalFacade.checkout(user, items, startDate.get(), endDate.get());
+        basketService.clear();
+        refresh();
+    }
+
+    /**
+     * @return ObservableList елементів у кошику
+     */
+    public ObservableList<Costume> getItems() {
+        return items;
+    }
+
+    /**
+     * @return властивість дати початку оренди
+     */
+    public ObjectProperty<LocalDate> startDateProperty() {
+        return startDate;
+    }
+
+    /**
+     * @return властивість дати завершення оренди
+     */
+    public ObjectProperty<LocalDate> endDateProperty() {
+        return endDate;
+    }
+
+    /**
+     * @return властивість загальної вартості
+     */
+    public StringProperty totalPriceProperty() {
+        return totalPrice;
+    }
+
+    /**
+     * @return властивість загальної суми застави
+     */
+    public StringProperty depositTotalProperty() {
+        return depositTotal;
+    }
+
+    /**
+     * @return властивість суми знижки
+     */
+    public StringProperty discountAmountProperty() {
+        return discountAmount;
+    }
+
+    /**
+     * @return копія списку елементів у кошику
+     */
+    public List<Costume> getItemsSnapshot() {
+        return basketService.getItems();
+    }
+
+    /**
+     * Розраховує вартість оренди для вказаної кількості днів.
+     *
+     * @param days кількість днів оренди
+     * @return сума вартості оренди
+     */
+    public BigDecimal getRentalTotal(long days) {
+        return basketService.calculateRentalTotal(days);
+    }
+
+    /**
+     * @return сумарна сума застави за всі предмети
+     */
+    public BigDecimal getTotalDeposit() {
+        return basketService.calculateTotalDeposit();
+    }
+
+    /**
+     * Розраховує суму знижки.
+     *
+     * @param days кількість днів оренди
+     * @return сума знижки
+     */
+    public BigDecimal getDiscount(long days) {
+        return basketService.calculateDiscount(days);
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/viewmodel/CatalogViewModel.java =====
+
+package com.oliinyk.costumes.viewmodel;
+
+import com.oliinyk.costumes.model.Costume;
+import com.oliinyk.costumes.service.BasketService;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+/**
+ * ViewModel для каталогу костюмів. Відповідає за відображення списку костюмів, фільтрацію та
+ * управління кошиком.
+ */
+public class CatalogViewModel {
+
+    private final ObservableList<Costume> costumes = FXCollections.observableArrayList();
+    private final BooleanProperty isDarkTheme = new SimpleBooleanProperty(false);
+    private final StringProperty cartButtonText = new SimpleStringProperty("Кошик (0)");
+    private int cartCount = 0;
+
+    /** Конструктор ViewModel каталогу. Автоматично завантажує дані з бази. */
+    public CatalogViewModel() {
+        loadFromDatabase();
+    }
+
+    /**
+     * Повертає список костюмів для відображення.
+     *
+     * @return ObservableList костюмів
+     */
+    public ObservableList<Costume> getCostumes() {
+        return costumes;
+    }
+
+    /**
+     * Повертає властивість поточної теми (темна/світла).
+     *
+     * @return BooleanProperty теми
+     */
+    public BooleanProperty isDarkThemeProperty() {
+        return isDarkTheme;
+    }
+
+    /** Перемикає тему оформлення. */
+    public void toggleTheme() {
+        isDarkTheme.set(!isDarkTheme.get());
+    }
+
+    /**
+     * Повертає властивість тексту кнопки кошика.
+     *
+     * @return StringProperty тексту кошика
+     */
+    public StringProperty cartButtonTextProperty() {
+        return cartButtonText;
+    }
+
+    /**
+     * Додає костюм до кошика.
+     *
+     * @param costume об'єкт костюма для додавання
+     */
+    public void addToCart(Costume costume) {
+        BasketService.getInstance().addItem(costume);
+        cartCount++;
+        cartButtonText.set("Кошик (" + cartCount + ")");
+    }
+
+    /** Завантажує список костюмів з репозиторію. */
+    public void loadFromDatabase() {
+        com.oliinyk.costumes.repository.CostumeRepository repo =
+                new com.oliinyk.costumes.repository.JdbcCostumeRepository();
+        costumes.setAll(repo.findAll());
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/viewmodel/LoginViewModel.java =====
+
+package com.oliinyk.costumes.viewmodel;
+
+import com.oliinyk.costumes.service.AuthService;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
+/**
+ * ViewModel для вікна входу в систему. Забезпечує зв'язок між інтерфейсом користувача та сервісом
+ * аутентифікації.
+ */
+public class LoginViewModel {
+
+    private final AuthService authService;
+
+    private final StringProperty email = new SimpleStringProperty("");
+    private final StringProperty password = new SimpleStringProperty("");
+    private final StringProperty errorMessage = new SimpleStringProperty("");
+    private final BooleanProperty loginSuccessful = new SimpleBooleanProperty(false);
+
+    /**
+     * Конструктор ViewModel для входу.
+     *
+     * @param authService сервіс аутентифікації для перевірки даних
+     */
+    public LoginViewModel(AuthService authService) {
+        this.authService = authService;
+    }
+
+    /**
+     * Повертає властивість для поля електронної пошти.
+     *
+     * @return StringProperty для email
+     */
+    public StringProperty emailProperty() {
+        return email;
+    }
+
+    /**
+     * Повертає властивість для поля пароля.
+     *
+     * @return StringProperty для пароля
+     */
+    public StringProperty passwordProperty() {
+        return password;
+    }
+
+    /**
+     * Повертає властивість для повідомлення про помилку.
+     *
+     * @return StringProperty для тексту помилки
+     */
+    public StringProperty errorMessageProperty() {
+        return errorMessage;
+    }
+
+    /**
+     * Повертає властивість, що вказує на успішність входу.
+     *
+     * @return BooleanProperty успішності входу
+     */
+    public BooleanProperty loginSuccessfulProperty() {
+        return loginSuccessful;
+    }
+
+    /**
+     * Здійснює спробу входу в систему. Перевіряє введені дані та оновлює статус входу або
+     * повідомлення про помилку.
+     */
+    public void attemptLogin() {
+        if (email.get() == null || email.get().isEmpty()) {
+            errorMessage.set("Email не може бути порожнім");
+            return;
+        }
+
+        authService
+                .login(email.get(), password.get())
+                .ifPresentOrElse(
+                        user -> {
+                            if (!user.isVerified()) {
+                                errorMessage.set("Акаунт не верифіковано.");
+                                loginSuccessful.set(false);
+                            } else {
+                                com.oliinyk.costumes.service.SessionManager.getInstance()
+                                        .login(user);
+                                errorMessage.set("");
+                                loginSuccessful.set(true);
+                            }
+                        },
+                        () -> errorMessage.set("Неправильний email або пароль"));
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/viewmodel/RegisterViewModel.java =====
+
+package com.oliinyk.costumes.viewmodel;
+
+import com.oliinyk.costumes.service.AuthService;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
+/**
+ * ViewModel для вікна реєстрації та верифікації користувачів. Керує станом реєстраційної форми та
+ * взаємодіє з сервісом аутентифікації.
+ */
+public class RegisterViewModel {
+    private final AuthService authService;
+
+    private final StringProperty email = new SimpleStringProperty("");
+    private final StringProperty password = new SimpleStringProperty("");
+    private final StringProperty code = new SimpleStringProperty("");
+    private final StringProperty errorMessage = new SimpleStringProperty("");
+    private final BooleanProperty registrationSuccessful = new SimpleBooleanProperty(false);
+    private final BooleanProperty verificationSuccessful = new SimpleBooleanProperty(false);
+
+    /**
+     * Конструктор ViewModel для реєстрації.
+     *
+     * @param authService сервіс аутентифікації для реєстрації та верифікації
+     */
+    public RegisterViewModel(AuthService authService) {
+        this.authService = authService;
+    }
+
+    /**
+     * @return властивість для поля електронної пошти
+     */
+    public StringProperty emailProperty() {
+        return email;
+    }
+
+    /**
+     * @return властивість для поля пароля
+     */
+    public StringProperty passwordProperty() {
+        return password;
+    }
+
+    /**
+     * @return властивість для поля коду верифікації
+     */
+    public StringProperty codeProperty() {
+        return code;
+    }
+
+    /**
+     * @return властивість для повідомлення про помилку
+     */
+    public StringProperty errorMessageProperty() {
+        return errorMessage;
+    }
+
+    /**
+     * @return властивість успішності реєстрації
+     */
+    public BooleanProperty registrationSuccessfulProperty() {
+        return registrationSuccessful;
+    }
+
+    /**
+     * @return властивість успішності верифікації
+     */
+    public BooleanProperty verificationSuccessfulProperty() {
+        return verificationSuccessful;
+    }
+
+    /** Спроба зареєструвати нового користувача. Валідує дані та викликає сервіс реєстрації. */
+    public void attemptRegister() {
+        if (email.get() == null
+                || email.get().trim().isEmpty()
+                || password.get() == null
+                || password.get().isEmpty()) {
+            errorMessage.set("Введіть email та пароль.");
+            return;
+        }
+
+        try {
+            authService.registerUser(email.get(), password.get(), "USER");
+            errorMessage.set("");
+            registrationSuccessful.set(true);
+        } catch (IllegalArgumentException e) {
+            errorMessage.set(e.getMessage());
+        } catch (Exception e) {
+            errorMessage.set("Помилка реєстрації: " + e.getMessage());
+        }
+    }
+
+    /** Спроба верифікувати акаунт за допомогою коду. */
+    public void attemptVerify() {
+        if (authService.verifyUser(email.get(), code.get())) {
+            errorMessage.set("Успішно! Тепер увійдіть.");
+            verificationSuccessful.set(true);
+        } else {
+            errorMessage.set("Невірний код.");
+        }
+    }
+}
+
+
+===== ./src/main/java/com/oliinyk/costumes/viewmodel/SettingsViewModel.java =====
+
+package com.oliinyk.costumes.viewmodel;
+
+import com.oliinyk.costumes.service.SessionManager;
+import javafx.beans.property.StringProperty;
+
+/** ViewModel для налаштувань. Керує станом теми та режимом відображення. */
+public class SettingsViewModel {
+
+    private final SessionManager sessionManager = SessionManager.getInstance();
+
+    /**
+     * @return властивість поточної теми (DARK/LIGHT)
+     */
+    public StringProperty themeProperty() {
+        return sessionManager.themeProperty();
+    }
+
+    /**
+     * @return властивість режиму відображення (GRID/LIST)
+     */
+    public StringProperty viewModeProperty() {
+        return sessionManager.viewModeProperty();
+    }
+
+    /**
+     * @return true, якщо вибрано темну тему
+     */
+    public boolean isDarkTheme() {
+        return "DARK".equals(sessionManager.themeProperty().get());
+    }
+
+    /**
+     * Встановлює тему оформлення.
+     *
+     * @param isDark true для темної теми, false для світлої
+     */
+    public void setTheme(boolean isDark) {
+        sessionManager.themeProperty().set(isDark ? "DARK" : "LIGHT");
+    }
+
+    /**
+     * @return true, якщо вибрано режим сітки (GRID)
+     */
+    public boolean isGridView() {
+        return !"LIST".equals(sessionManager.viewModeProperty().get());
+    }
+
+    /**
+     * Встановлює режим відображення каталогу.
+     *
+     * @param isGrid true для режиму сітки, false для списку
+     */
+    public void setViewMode(boolean isGrid) {
+        sessionManager.viewModeProperty().set(isGrid ? "GRID" : "LIST");
+    }
+}

@@ -1,0 +1,159 @@
+<html>
+<head>
+<title>JdbcCategoryRepository.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #8c8c8c; font-style: italic;}
+.s4 { color: #067d17;}
+.s5 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+JdbcCategoryRepository.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.repository;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.infrastructure.DatabaseManager;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Category;</span>
+<span class="s0">import </span><span class="s1">java.sql.Connection;</span>
+<span class="s0">import </span><span class="s1">java.sql.PreparedStatement;</span>
+<span class="s0">import </span><span class="s1">java.sql.ResultSet;</span>
+<span class="s0">import </span><span class="s1">java.sql.SQLException;</span>
+<span class="s0">import </span><span class="s1">java.util.ArrayList;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">java.util.Optional;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+
+<span class="s2">/**</span>
+ <span class="s2">* JDBC реалізація репозиторію категорій. Забезпечує взаємодію з таблицею categories у базі даних.</span>
+ <span class="s2">*/</span>
+<span class="s0">public class </span><span class="s1">JdbcCategoryRepository </span><span class="s0">implements </span><span class="s1">CategoryRepository {</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Зберігає нову категорію в базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">category об'єкт категорії для збереження</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">save(Category category) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;INSERT INTO categories (id, name, description) VALUES (?, ?, ?)&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, category.getId());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">2</span><span class="s1">, category.getName());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">3</span><span class="s1">, category.getDescription());</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при збереженні категорії&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Знаходить категорію за її ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id унікальний ідентифікатор категорії</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">Optional з категорією, якщо знайдено, або порожній Optional</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">Optional&lt;Category&gt; findById(UUID id) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM categories WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, id);</span>
+            <span class="s0">try </span><span class="s1">(ResultSet rs = stmt.executeQuery()) {</span>
+                <span class="s0">if </span><span class="s1">(rs.next()) {</span>
+                    <span class="s0">return </span><span class="s1">Optional.of(mapResultSetToCategory(rs));</span>
+                <span class="s1">}</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при пошуку категорії за ID&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">Optional.empty();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Повертає список усіх категорій з бази даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">список усіх категорій</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public </span><span class="s1">List&lt;Category&gt; findAll() {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;SELECT * FROM categories&quot;</span><span class="s1">;</span>
+        <span class="s1">List&lt;Category&gt; categories = </span><span class="s0">new </span><span class="s1">ArrayList&lt;&gt;();</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql);</span>
+                <span class="s1">ResultSet rs = stmt.executeQuery()) {</span>
+            <span class="s0">while </span><span class="s1">(rs.next()) {</span>
+                <span class="s1">categories.add(mapResultSetToCategory(rs));</span>
+            <span class="s1">}</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при отриманні всіх категорій&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+        <span class="s0">return </span><span class="s1">categories;</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Оновлює дані існуючої категорії в базі даних.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">category об'єкт категорії з оновленими даними</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">update(Category category) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;UPDATE categories SET name = ?, description = ? WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setString(</span><span class="s5">1</span><span class="s1">, category.getName());</span>
+            <span class="s1">stmt.setString(</span><span class="s5">2</span><span class="s1">, category.getDescription());</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">3</span><span class="s1">, category.getId());</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при оновленні категорії&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Видаляє категорію за її ідентифікатором.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">id унікальний ідентифікатор категорії для видалення</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">RuntimeException якщо виникла помилка SQL під час виконання запиту</span>
+     <span class="s2">*/</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">delete(UUID id) {</span>
+        <span class="s1">String sql = </span><span class="s4">&quot;DELETE FROM categories WHERE id = ?&quot;</span><span class="s1">;</span>
+        <span class="s0">try </span><span class="s1">(Connection conn = DatabaseManager.getConnection();</span>
+                <span class="s1">PreparedStatement stmt = conn.prepareStatement(sql)) {</span>
+            <span class="s1">stmt.setObject(</span><span class="s5">1</span><span class="s1">, id);</span>
+            <span class="s1">stmt.executeUpdate();</span>
+        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(SQLException e) {</span>
+            <span class="s0">throw new </span><span class="s1">RuntimeException(</span><span class="s4">&quot;Помилка при видаленні категорії&quot;</span><span class="s1">, e);</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Перетворює рядок ResultSet у об'єкт Category.</span>
+     <span class="s2">*</span>
+     <span class="s2">* </span><span class="s3">@param </span><span class="s2">rs ResultSet з результатами запиту</span>
+     <span class="s2">* </span><span class="s3">@return </span><span class="s2">об'єкт Category</span>
+     <span class="s2">* </span><span class="s3">@throws </span><span class="s2">SQLException якщо виникла помилка при читанні з ResultSet</span>
+     <span class="s2">*/</span>
+    <span class="s0">private </span><span class="s1">Category mapResultSetToCategory(ResultSet rs) </span><span class="s0">throws </span><span class="s1">SQLException {</span>
+        <span class="s0">return </span><span class="s1">Category.builder()</span>
+                <span class="s1">.id(rs.getObject(</span><span class="s4">&quot;id&quot;</span><span class="s1">, UUID.</span><span class="s0">class</span><span class="s1">))</span>
+                <span class="s1">.name(rs.getString(</span><span class="s4">&quot;name&quot;</span><span class="s1">))</span>
+                <span class="s1">.description(rs.getString(</span><span class="s4">&quot;description&quot;</span><span class="s1">))</span>
+                <span class="s1">.build();</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

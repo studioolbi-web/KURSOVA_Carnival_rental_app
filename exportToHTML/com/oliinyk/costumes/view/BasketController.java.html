@@ -1,0 +1,329 @@
+<html>
+<head>
+<title>BasketController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #1750eb;}
+.s4 { color: #067d17;}
+.s5 { color: #0037a6;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+BasketController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.viewmodel.BasketViewModel;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.time.LocalDate;</span>
+<span class="s0">import </span><span class="s1">java.time.format.DateTimeFormatter;</span>
+<span class="s0">import </span><span class="s1">java.time.temporal.ChronoUnit;</span>
+<span class="s0">import </span><span class="s1">java.util.List;</span>
+<span class="s0">import </span><span class="s1">javafx.concurrent.Task;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.geometry.Insets;</span>
+<span class="s0">import </span><span class="s1">javafx.geometry.Pos;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.Scene;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.Alert;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.Button;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.DatePicker;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.Label;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.ListView;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.Separator;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.HBox;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.Priority;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.Region;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.layout.VBox;</span>
+<span class="s0">import </span><span class="s1">javafx.stage.Modality;</span>
+<span class="s0">import </span><span class="s1">javafx.stage.Stage;</span>
+
+<span class="s2">/** Контролер кошика. Реалізує асинхронну логіку оформлення замовлення (Вимога розділу 4.4.5). */</span>
+<span class="s0">public class </span><span class="s1">BasketController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">ListView&lt;String&gt; basketItems;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">DatePicker startDatePicker;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">DatePicker endDatePicker;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">Label totalPriceLabel;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">Label depositLabel;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">Label discountLabel;</span>
+
+    <span class="s0">private </span><span class="s1">BasketViewModel viewModel;</span>
+
+    <span class="s0">public void </span><span class="s1">setViewModel(BasketViewModel viewModel) {</span>
+        <span class="s0">this</span><span class="s1">.viewModel = viewModel;</span>
+        <span class="s1">setupBindings();</span>
+        <span class="s1">refreshList();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">setupBindings() {</span>
+        <span class="s1">startDatePicker.valueProperty().bindBidirectional(viewModel.startDateProperty());</span>
+        <span class="s1">endDatePicker.valueProperty().bindBidirectional(viewModel.endDateProperty());</span>
+        <span class="s1">totalPriceLabel.textProperty().bind(viewModel.totalPriceProperty());</span>
+        <span class="s1">depositLabel.textProperty().bind(viewModel.depositTotalProperty());</span>
+        <span class="s1">discountLabel.textProperty().bind(viewModel.discountAmountProperty());</span>
+
+        <span class="s2">// Налаштування обмежень для дат (Вимога UI/UX)</span>
+        <span class="s1">startDatePicker.setDayCellFactory(</span>
+                <span class="s1">picker -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.DateCell() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">public void </span><span class="s1">updateItem(LocalDate date, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(date, empty);</span>
+                                <span class="s1">setDisable(empty || date.isBefore(LocalDate.now()));</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">endDatePicker.setDayCellFactory(</span>
+                <span class="s1">picker -&gt;</span>
+                        <span class="s0">new </span><span class="s1">javafx.scene.control.DateCell() {</span>
+                            <span class="s1">@Override</span>
+                            <span class="s0">public void </span><span class="s1">updateItem(LocalDate date, </span><span class="s0">boolean </span><span class="s1">empty) {</span>
+                                <span class="s0">super</span><span class="s1">.updateItem(date, empty);</span>
+                                <span class="s1">setDisable(</span>
+                                        <span class="s1">empty</span>
+                                                <span class="s1">|| date.isBefore(</span>
+                                                        <span class="s1">startDatePicker.getValue().plusDays(</span><span class="s3">1</span><span class="s1">)));</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s1">startDatePicker</span>
+                <span class="s1">.valueProperty()</span>
+                <span class="s1">.addListener(</span>
+                        <span class="s1">(obs, oldVal, newVal) -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(newVal != </span><span class="s0">null</span>
+                                    <span class="s1">&amp;&amp; (endDatePicker.getValue() == </span><span class="s0">null</span>
+                                            <span class="s1">|| endDatePicker</span>
+                                                    <span class="s1">.getValue()</span>
+                                                    <span class="s1">.isBefore(newVal.plusDays(</span><span class="s3">1</span><span class="s1">)))) {</span>
+                                <span class="s1">endDatePicker.setValue(newVal.plusDays(</span><span class="s3">1</span><span class="s1">));</span>
+                            <span class="s1">}</span>
+                            <span class="s1">viewModel.recalculate();</span>
+                        <span class="s1">});</span>
+        <span class="s1">endDatePicker.valueProperty().addListener((obs, oldVal, newVal) -&gt; viewModel.recalculate());</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">refreshList() {</span>
+        <span class="s1">basketItems.getItems().clear();</span>
+        <span class="s0">for </span><span class="s1">(Costume c : viewModel.getItems()) {</span>
+            <span class="s1">basketItems</span>
+                    <span class="s1">.getItems()</span>
+                    <span class="s1">.add(String.format(</span><span class="s4">&quot;%s - %.2f грн/день&quot;</span><span class="s1">, c.getName(), c.getPricePerDay()));</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onRentClicked() {</span>
+        <span class="s2">// Асинхронне оформлення замовлення (Вимога розділу 4.4.5)</span>
+        <span class="s1">Task&lt;Void&gt; checkoutTask =</span>
+                <span class="s0">new </span><span class="s1">Task&lt;&gt;() {</span>
+                    <span class="s1">@Override</span>
+                    <span class="s0">protected </span><span class="s1">Void call() </span><span class="s0">throws </span><span class="s1">Exception {</span>
+                        <span class="s1">viewModel.checkout();</span>
+                        <span class="s0">return null</span><span class="s1">;</span>
+                    <span class="s1">}</span>
+                <span class="s1">};</span>
+        <span class="s1">checkoutTask.setOnSucceeded(</span>
+                <span class="s1">e -&gt; {</span>
+                    <span class="s2">// Знімок даних кошика до очищення (Блок 1: Електронний чек)</span>
+                    <span class="s1">List&lt;Costume&gt; snapshot = viewModel.getItemsSnapshot();</span>
+                    <span class="s0">long </span><span class="s1">days =</span>
+                            <span class="s1">ChronoUnit.DAYS.between(</span>
+                                    <span class="s1">startDatePicker.getValue(), endDatePicker.getValue());</span>
+                    <span class="s0">if </span><span class="s1">(days &lt;= </span><span class="s3">0</span><span class="s1">) days = </span><span class="s3">1</span><span class="s1">;</span>
+                    <span class="s1">BigDecimal rentalTotal = viewModel.getRentalTotal(days);</span>
+                    <span class="s1">BigDecimal deposit = viewModel.getTotalDeposit();</span>
+                    <span class="s1">BigDecimal discount = viewModel.getDiscount(days);</span>
+                    <span class="s1">BigDecimal grandTotal = rentalTotal.add(deposit);</span>
+
+                    <span class="s1">refreshList();</span>
+
+                    <span class="s2">// Показати електронний чек</span>
+                    <span class="s1">showReceiptDialog(</span>
+                            <span class="s1">snapshot,</span>
+                            <span class="s1">startDatePicker.getValue(),</span>
+                            <span class="s1">endDatePicker.getValue(),</span>
+                            <span class="s1">rentalTotal,</span>
+                            <span class="s1">deposit,</span>
+                            <span class="s1">discount,</span>
+                            <span class="s1">grandTotal);</span>
+
+                    <span class="s2">// Оновлення стану через SessionManager</span>
+                    <span class="s1">com.oliinyk.costumes.service.SessionManager.getInstance()</span>
+                            <span class="s1">.viewModeProperty()</span>
+                            <span class="s1">.set(</span>
+                                    <span class="s1">com.oliinyk.costumes.service.SessionManager.getInstance()</span>
+                                            <span class="s1">.viewModeProperty()</span>
+                                            <span class="s1">.get());</span>
+                <span class="s1">});</span>
+
+        <span class="s1">checkoutTask.setOnFailed(</span>
+                <span class="s1">e -&gt; {</span>
+                    <span class="s1">Throwable ex = checkoutTask.getException();</span>
+                    <span class="s1">showAlert(</span><span class="s4">&quot;Помилка&quot;</span><span class="s1">, ex.getMessage(), Alert.AlertType.ERROR);</span>
+                <span class="s1">});</span>
+
+        <span class="s2">// Запуск таска у фоновому потоці</span>
+        <span class="s0">new </span><span class="s1">Thread(checkoutTask).start();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">showAlert(String title, String content, Alert.AlertType type) {</span>
+        <span class="s1">Alert alert = </span><span class="s0">new </span><span class="s1">Alert(type);</span>
+        <span class="s1">alert.setTitle(title);</span>
+        <span class="s1">alert.setHeaderText(</span><span class="s0">null</span><span class="s1">);</span>
+        <span class="s1">alert.setContentText(content);</span>
+        <span class="s1">alert.showAndWait();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/**</span>
+     <span class="s2">* Показує модальне вікно електронного чеку після успішного оформлення оренди. Вікно генерується</span>
+     <span class="s2">* програмно через компоненти JavaFX (без FXML).</span>
+     <span class="s2">*/</span>
+    <span class="s0">private void </span><span class="s1">showReceiptDialog(</span>
+            <span class="s1">List&lt;Costume&gt; items,</span>
+            <span class="s1">LocalDate start,</span>
+            <span class="s1">LocalDate end,</span>
+            <span class="s1">BigDecimal rentalTotal,</span>
+            <span class="s1">BigDecimal deposit,</span>
+            <span class="s1">BigDecimal discount,</span>
+            <span class="s1">BigDecimal grandTotal) {</span>
+
+        <span class="s1">DateTimeFormatter fmt = DateTimeFormatter.ofPattern(</span><span class="s4">&quot;dd.MM.yyyy&quot;</span><span class="s1">);</span>
+        <span class="s0">long </span><span class="s1">days = ChronoUnit.DAYS.between(start, end);</span>
+        <span class="s0">if </span><span class="s1">(days &lt;= </span><span class="s3">0</span><span class="s1">) days = </span><span class="s3">1</span><span class="s1">;</span>
+
+        <span class="s2">// ── Заголовок чеку ──</span>
+        <span class="s1">Label titleIcon = </span><span class="s0">new </span><span class="s1">Label(</span><span class="s4">&quot;</span><span class="s5">\uD83E\uDDFE</span><span class="s4">&quot;</span><span class="s1">);</span>
+        <span class="s1">titleIcon.setStyle(</span><span class="s4">&quot;-fx-font-size: 28px;&quot;</span><span class="s1">);</span>
+        <span class="s1">Label titleLabel = </span><span class="s0">new </span><span class="s1">Label(</span><span class="s4">&quot;Електронний чек&quot;</span><span class="s1">);</span>
+        <span class="s1">titleLabel.setStyle(</span><span class="s4">&quot;-fx-font-size: 20px; -fx-font-weight: bold;&quot;</span><span class="s1">);</span>
+        <span class="s1">HBox titleBox = </span><span class="s0">new </span><span class="s1">HBox(</span><span class="s3">10</span><span class="s1">, titleIcon, titleLabel);</span>
+        <span class="s1">titleBox.setAlignment(Pos.CENTER);</span>
+
+        <span class="s1">Label subLabel = </span><span class="s0">new </span><span class="s1">Label(</span><span class="s4">&quot;Карнавальна крамниця — оренда костюмів&quot;</span><span class="s1">);</span>
+        <span class="s1">subLabel.setStyle(</span><span class="s4">&quot;-fx-text-fill: -color-fg-muted; -fx-font-size: 12px;&quot;</span><span class="s1">);</span>
+        <span class="s1">subLabel.setAlignment(Pos.CENTER);</span>
+        <span class="s1">subLabel.setMaxWidth(Double.MAX_VALUE);</span>
+
+        <span class="s2">// ── Дати ──</span>
+        <span class="s1">Label datesLabel =</span>
+                <span class="s0">new </span><span class="s1">Label(</span>
+                        <span class="s4">&quot;</span><span class="s5">\uD83D\uDCC5  </span><span class="s4">&quot;</span>
+                                <span class="s1">+ start.format(fmt)</span>
+                                <span class="s1">+ </span><span class="s4">&quot;  →  &quot;</span>
+                                <span class="s1">+ end.format(fmt)</span>
+                                <span class="s1">+ </span><span class="s4">&quot;   (&quot;</span>
+                                <span class="s1">+ days</span>
+                                <span class="s1">+ </span><span class="s4">&quot; дн.)&quot;</span><span class="s1">);</span>
+        <span class="s1">datesLabel.setStyle(</span><span class="s4">&quot;-fx-font-size: 13px;&quot;</span><span class="s1">);</span>
+
+        <span class="s2">// ── Список костюмів ──</span>
+        <span class="s1">VBox itemsBox = </span><span class="s0">new </span><span class="s1">VBox(</span><span class="s3">6</span><span class="s1">);</span>
+        <span class="s0">for </span><span class="s1">(Costume c : items) {</span>
+            <span class="s1">BigDecimal lineTotal = c.getPricePerDay().multiply(BigDecimal.valueOf(days));</span>
+            <span class="s1">Label row =</span>
+                    <span class="s0">new </span><span class="s1">Label(</span>
+                            <span class="s1">String.format(</span>
+                                    <span class="s4">&quot;• %s  —  %.2f грн/день  ×%d  =  %.2f грн&quot;</span><span class="s1">,</span>
+                                    <span class="s1">c.getName(), c.getPricePerDay(), days, lineTotal));</span>
+            <span class="s1">row.setStyle(</span><span class="s4">&quot;-fx-font-size: 13px;&quot;</span><span class="s1">);</span>
+            <span class="s1">itemsBox.getChildren().add(row);</span>
+        <span class="s1">}</span>
+
+        <span class="s2">// ── Фінансова зведення ──</span>
+        <span class="s1">VBox summaryBox = </span><span class="s0">new </span><span class="s1">VBox(</span><span class="s3">8</span><span class="s1">);</span>
+        <span class="s1">summaryBox.setStyle(</span>
+                <span class="s4">&quot;-fx-background-color: -color-bg-subtle;&quot;</span>
+                        <span class="s1">+ </span><span class="s4">&quot;-fx-background-radius: 8;&quot;</span>
+                        <span class="s1">+ </span><span class="s4">&quot;-fx-padding: 12;&quot;</span><span class="s1">);</span>
+
+        <span class="s1">summaryBox</span>
+                <span class="s1">.getChildren()</span>
+                <span class="s1">.addAll(</span>
+                        <span class="s1">buildSummaryRow(</span>
+                                <span class="s4">&quot;Вартість оренди:&quot;</span><span class="s1">, String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, rentalTotal), </span><span class="s0">false</span><span class="s1">),</span>
+                        <span class="s1">buildSummaryRow(</span><span class="s4">&quot;Застава:&quot;</span><span class="s1">, String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, deposit), </span><span class="s0">false</span><span class="s1">),</span>
+                        <span class="s1">buildSummaryRow(</span>
+                                <span class="s4">&quot;Знижка (10% від 3+ дн.):&quot;</span><span class="s1">,</span>
+                                <span class="s1">String.format(</span><span class="s4">&quot;-%.2f грн&quot;</span><span class="s1">, discount),</span>
+                                <span class="s1">discount.compareTo(BigDecimal.ZERO) &gt; </span><span class="s3">0</span><span class="s1">),</span>
+                        <span class="s0">new </span><span class="s1">Separator(),</span>
+                        <span class="s1">buildSummaryRow(</span>
+                                <span class="s4">&quot;До сплати:&quot;</span><span class="s1">, String.format(</span><span class="s4">&quot;%.2f грн&quot;</span><span class="s1">, grandTotal), </span><span class="s0">false</span><span class="s1">));</span>
+
+        <span class="s2">// Виділити підсумок жирним</span>
+        <span class="s1">HBox totalRow = (HBox) summaryBox.getChildren().get(summaryBox.getChildren().size() - </span><span class="s3">1</span><span class="s1">);</span>
+        <span class="s1">totalRow.getChildren()</span>
+                <span class="s1">.forEach(</span>
+                        <span class="s1">node -&gt; {</span>
+                            <span class="s0">if </span><span class="s1">(node </span><span class="s0">instanceof </span><span class="s1">Label lbl) {</span>
+                                <span class="s1">lbl.setStyle(</span><span class="s4">&quot;-fx-font-size: 15px; -fx-font-weight: bold;&quot;</span><span class="s1">);</span>
+                            <span class="s1">}</span>
+                        <span class="s1">});</span>
+
+        <span class="s2">// ── Кнопка закриття ──</span>
+        <span class="s1">Button closeBtn = </span><span class="s0">new </span><span class="s1">Button(</span><span class="s4">&quot;Закрити&quot;</span><span class="s1">);</span>
+        <span class="s1">closeBtn.getStyleClass().addAll(</span><span class="s4">&quot;button&quot;</span><span class="s1">, </span><span class="s4">&quot;accent&quot;</span><span class="s1">);</span>
+        <span class="s1">closeBtn.setPrefWidth(</span><span class="s3">160</span><span class="s1">);</span>
+
+        <span class="s2">// ── Складання макету ──</span>
+        <span class="s1">VBox root =</span>
+                <span class="s0">new </span><span class="s1">VBox(</span>
+                        <span class="s3">14</span><span class="s1">,</span>
+                        <span class="s1">titleBox,</span>
+                        <span class="s1">subLabel,</span>
+                        <span class="s0">new </span><span class="s1">Separator(),</span>
+                        <span class="s1">datesLabel,</span>
+                        <span class="s0">new </span><span class="s1">Separator(),</span>
+                        <span class="s1">itemsBox,</span>
+                        <span class="s0">new </span><span class="s1">Separator(),</span>
+                        <span class="s1">summaryBox,</span>
+                        <span class="s1">closeBtn);</span>
+        <span class="s1">root.setPadding(</span><span class="s0">new </span><span class="s1">Insets(</span><span class="s3">24</span><span class="s1">));</span>
+        <span class="s1">root.setAlignment(Pos.TOP_CENTER);</span>
+        <span class="s1">root.setStyle(</span><span class="s4">&quot;-fx-background-color: -color-bg-default;&quot;</span><span class="s1">);</span>
+        <span class="s1">root.setPrefWidth(</span><span class="s3">460</span><span class="s1">);</span>
+
+        <span class="s1">Stage dialog = </span><span class="s0">new </span><span class="s1">Stage();</span>
+        <span class="s1">dialog.setTitle(</span><span class="s4">&quot;Електронний чек&quot;</span><span class="s1">);</span>
+        <span class="s1">dialog.initModality(Modality.APPLICATION_MODAL);</span>
+        <span class="s1">dialog.initOwner(basketItems.getScene().getWindow());</span>
+        <span class="s1">dialog.setResizable(</span><span class="s0">false</span><span class="s1">);</span>
+
+        <span class="s1">closeBtn.setOnAction(ev -&gt; dialog.close());</span>
+
+        <span class="s1">Scene scene = </span><span class="s0">new </span><span class="s1">Scene(root);</span>
+        <span class="s2">// Успадкувати стилі з головного вікна</span>
+        <span class="s1">scene.getStylesheets().addAll(basketItems.getScene().getStylesheets());</span>
+        <span class="s1">dialog.setScene(scene);</span>
+        <span class="s1">dialog.showAndWait();</span>
+    <span class="s1">}</span>
+
+    <span class="s2">/** Будує рядок зведення (label + значення) для чеку. */</span>
+    <span class="s0">private </span><span class="s1">HBox buildSummaryRow(String label, String value, </span><span class="s0">boolean </span><span class="s1">isDiscount) {</span>
+        <span class="s1">Label left = </span><span class="s0">new </span><span class="s1">Label(label);</span>
+        <span class="s1">left.setStyle(</span><span class="s4">&quot;-fx-font-size: 13px;&quot;</span><span class="s1">);</span>
+
+        <span class="s1">Region spacer = </span><span class="s0">new </span><span class="s1">Region();</span>
+        <span class="s1">HBox.setHgrow(spacer, Priority.ALWAYS);</span>
+
+        <span class="s1">Label right = </span><span class="s0">new </span><span class="s1">Label(value);</span>
+        <span class="s1">right.setStyle(</span>
+                <span class="s4">&quot;-fx-font-size: 13px;&quot; </span><span class="s1">+ (isDiscount ? </span><span class="s4">&quot; -fx-text-fill: -color-success-fg;&quot; </span><span class="s1">: </span><span class="s4">&quot;&quot;</span><span class="s1">));</span>
+
+        <span class="s1">HBox row = </span><span class="s0">new </span><span class="s1">HBox(spacer);</span>
+        <span class="s1">row.getChildren().add(</span><span class="s3">0</span><span class="s1">, left);</span>
+        <span class="s1">row.getChildren().add(right);</span>
+        <span class="s1">row.setAlignment(Pos.CENTER_LEFT);</span>
+        <span class="s0">return </span><span class="s1">row;</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>

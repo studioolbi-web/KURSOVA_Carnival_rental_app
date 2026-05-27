@@ -1,0 +1,195 @@
+<html>
+<head>
+<title>CostumeDialogController.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #8c8c8c; font-style: italic;}
+.s3 { color: #067d17;}
+.s4 { color: #0037a6;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+CostumeDialogController.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.oliinyk.costumes.view;</span>
+
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Category;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.model.Costume;</span>
+<span class="s0">import </span><span class="s1">com.oliinyk.costumes.repository.JdbcCategoryRepository;</span>
+<span class="s0">import </span><span class="s1">java.math.BigDecimal;</span>
+<span class="s0">import </span><span class="s1">java.util.UUID;</span>
+<span class="s0">import </span><span class="s1">javafx.collections.FXCollections;</span>
+<span class="s0">import </span><span class="s1">javafx.fxml.FXML;</span>
+<span class="s0">import </span><span class="s1">javafx.scene.control.*;</span>
+<span class="s0">import </span><span class="s1">javafx.stage.Stage;</span>
+<span class="s0">import </span><span class="s1">javafx.util.StringConverter;</span>
+
+<span class="s2">/** Контролер діалогового вікна для додавання/редагування костюма. */</span>
+<span class="s0">public class </span><span class="s1">CostumeDialogController {</span>
+
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField nameField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextArea descriptionArea;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField priceField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField depositField;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">ComboBox&lt;Category&gt; categoryComboBox;</span>
+    <span class="s1">@FXML </span><span class="s0">private </span><span class="s1">TextField imagePathField;</span>
+
+    <span class="s0">private </span><span class="s1">Costume costume;</span>
+    <span class="s0">private boolean </span><span class="s1">saveClicked = </span><span class="s0">false</span><span class="s1">;</span>
+    <span class="s0">private final </span><span class="s1">JdbcCategoryRepository categoryRepo = </span><span class="s0">new </span><span class="s1">JdbcCategoryRepository();</span>
+    <span class="s0">private final </span><span class="s1">com.oliinyk.costumes.service.ImageService imageService =</span>
+            <span class="s0">new </span><span class="s1">com.oliinyk.costumes.service.ImageService();</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">public void </span><span class="s1">initialize() {</span>
+        <span class="s1">imagePathField.setEditable(</span><span class="s0">false</span><span class="s1">);</span>
+        <span class="s1">imagePathField.setOnMouseClicked(</span>
+                <span class="s1">e -&gt; {</span>
+                    <span class="s1">javafx.stage.FileChooser fileChooser = </span><span class="s0">new </span><span class="s1">javafx.stage.FileChooser();</span>
+                    <span class="s1">fileChooser.setTitle(</span><span class="s3">&quot;Оберіть зображення&quot;</span><span class="s1">);</span>
+                    <span class="s1">fileChooser</span>
+                            <span class="s1">.getExtensionFilters()</span>
+                            <span class="s1">.addAll(</span>
+                                    <span class="s0">new </span><span class="s1">javafx.stage.FileChooser.ExtensionFilter(</span>
+                                            <span class="s3">&quot;Зображення&quot;</span><span class="s1">, </span><span class="s3">&quot;*.png&quot;</span><span class="s1">, </span><span class="s3">&quot;*.jpg&quot;</span><span class="s1">, </span><span class="s3">&quot;*.jpeg&quot;</span><span class="s1">));</span>
+
+                    <span class="s1">java.io.File file =</span>
+                            <span class="s1">fileChooser.showOpenDialog(imagePathField.getScene().getWindow());</span>
+                    <span class="s0">if </span><span class="s1">(file != </span><span class="s0">null</span><span class="s1">) {</span>
+                        <span class="s0">try </span><span class="s1">{</span>
+                            <span class="s1">String savedPath = imageService.saveImage(file);</span>
+                            <span class="s1">imagePathField.setText(savedPath);</span>
+                        <span class="s1">} </span><span class="s0">catch </span><span class="s1">(Exception ex) {</span>
+                            <span class="s1">Alert alert = </span><span class="s0">new </span><span class="s1">Alert(Alert.AlertType.ERROR);</span>
+                            <span class="s1">alert.setTitle(</span><span class="s3">&quot;Помилка&quot;</span><span class="s1">);</span>
+                            <span class="s1">alert.setHeaderText(</span><span class="s3">&quot;Не вдалося зберегти зображення&quot;</span><span class="s1">);</span>
+                            <span class="s1">alert.setContentText(ex.getMessage());</span>
+                            <span class="s1">alert.showAndWait();</span>
+                        <span class="s1">}</span>
+                    <span class="s1">}</span>
+                <span class="s1">});</span>
+
+        <span class="s1">categoryComboBox.setItems(FXCollections.observableArrayList(categoryRepo.findAll()));</span>
+        <span class="s1">categoryComboBox.setConverter(</span>
+                <span class="s0">new </span><span class="s1">StringConverter&lt;&gt;() {</span>
+                    <span class="s1">@Override</span>
+                    <span class="s0">public </span><span class="s1">String toString(Category category) {</span>
+                        <span class="s0">return </span><span class="s1">category == </span><span class="s0">null </span><span class="s1">? </span><span class="s3">&quot;&quot; </span><span class="s1">: category.getName();</span>
+                    <span class="s1">}</span>
+
+                    <span class="s1">@Override</span>
+                    <span class="s0">public </span><span class="s1">Category fromString(String string) {</span>
+                        <span class="s0">return null</span><span class="s1">;</span>
+                    <span class="s1">}</span>
+                <span class="s1">});</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public void </span><span class="s1">setCostume(Costume costume) {</span>
+        <span class="s0">this</span><span class="s1">.costume = costume;</span>
+        <span class="s0">if </span><span class="s1">(costume != </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s1">nameField.setText(costume.getName());</span>
+            <span class="s1">descriptionArea.setText(costume.getDescription());</span>
+            <span class="s1">priceField.setText(String.format(</span><span class="s3">&quot;%.2f&quot;</span><span class="s1">, costume.getPricePerDay()).replace(</span><span class="s3">','</span><span class="s1">, </span><span class="s3">'.'</span><span class="s1">));</span>
+            <span class="s1">depositField.setText(</span>
+                    <span class="s1">String.format(</span>
+                                    <span class="s3">&quot;%.2f&quot;</span><span class="s1">,</span>
+                                    <span class="s1">costume.getDepositAmount() != </span><span class="s0">null</span>
+                                            <span class="s1">? costume.getDepositAmount()</span>
+                                            <span class="s1">: BigDecimal.ZERO)</span>
+                            <span class="s1">.replace(</span><span class="s3">','</span><span class="s1">, </span><span class="s3">'.'</span><span class="s1">));</span>
+            <span class="s1">imagePathField.setText(costume.getImagePath());</span>
+
+            <span class="s1">categoryComboBox.getItems().stream()</span>
+                    <span class="s1">.filter(c -&gt; c.getId().equals(costume.getCategoryId()))</span>
+                    <span class="s1">.findFirst()</span>
+                    <span class="s1">.ifPresent(c -&gt; categoryComboBox.setValue(c));</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public boolean </span><span class="s1">isSaveClicked() {</span>
+        <span class="s0">return </span><span class="s1">saveClicked;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">public </span><span class="s1">Costume getCostume() {</span>
+        <span class="s0">if </span><span class="s1">(costume == </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s1">costume = Costume.builder().id(UUID.randomUUID()).build();</span>
+        <span class="s1">}</span>
+
+        <span class="s1">costume.setName(nameField.getText());</span>
+        <span class="s1">costume.setDescription(descriptionArea.getText());</span>
+        <span class="s1">costume.setPricePerDay(</span><span class="s0">new </span><span class="s1">BigDecimal(priceField.getText()));</span>
+        <span class="s1">costume.setDepositAmount(</span><span class="s0">new </span><span class="s1">BigDecimal(depositField.getText()));</span>
+        <span class="s1">costume.setImagePath(imagePathField.getText());</span>
+        <span class="s0">if </span><span class="s1">(categoryComboBox.getValue() != </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s1">costume.setCategoryId(categoryComboBox.getValue().getId());</span>
+        <span class="s1">}</span>
+
+        <span class="s0">return </span><span class="s1">costume;</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onSaveClicked() {</span>
+        <span class="s0">if </span><span class="s1">(validateInput()) {</span>
+            <span class="s1">saveClicked = </span><span class="s0">true</span><span class="s1">;</span>
+            <span class="s1">closeStage();</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+
+    <span class="s1">@FXML</span>
+    <span class="s0">private void </span><span class="s1">onCancelClicked() {</span>
+        <span class="s1">closeStage();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">closeStage() {</span>
+        <span class="s1">Stage stage = (Stage) nameField.getScene().getWindow();</span>
+        <span class="s1">stage.close();</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private boolean </span><span class="s1">validateInput() {</span>
+        <span class="s1">String errorMessage = </span><span class="s3">&quot;&quot;</span><span class="s1">;</span>
+
+        <span class="s0">if </span><span class="s1">(nameField.getText() == </span><span class="s0">null </span><span class="s1">|| nameField.getText().isEmpty()) {</span>
+            <span class="s1">errorMessage += </span><span class="s3">&quot;Некоректна назва!</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">;</span>
+        <span class="s1">}</span>
+        <span class="s0">if </span><span class="s1">(priceField.getText() == </span><span class="s0">null </span><span class="s1">|| priceField.getText().isEmpty()) {</span>
+            <span class="s1">errorMessage += </span><span class="s3">&quot;Некоректна ціна!</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">;</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s0">new </span><span class="s1">BigDecimal(priceField.getText());</span>
+            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(NumberFormatException e) {</span>
+                <span class="s1">errorMessage += </span><span class="s3">&quot;Ціна повинна бути числом!</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s0">if </span><span class="s1">(depositField.getText() == </span><span class="s0">null </span><span class="s1">|| depositField.getText().isEmpty()) {</span>
+            <span class="s1">errorMessage += </span><span class="s3">&quot;Некоректна застава!</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">;</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s0">try </span><span class="s1">{</span>
+                <span class="s0">new </span><span class="s1">BigDecimal(depositField.getText());</span>
+            <span class="s1">} </span><span class="s0">catch </span><span class="s1">(NumberFormatException e) {</span>
+                <span class="s1">errorMessage += </span><span class="s3">&quot;Застава повинна бути числом!</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">;</span>
+            <span class="s1">}</span>
+        <span class="s1">}</span>
+        <span class="s0">if </span><span class="s1">(categoryComboBox.getValue() == </span><span class="s0">null</span><span class="s1">) {</span>
+            <span class="s1">errorMessage += </span><span class="s3">&quot;Оберіть категорію!</span><span class="s4">\n</span><span class="s3">&quot;</span><span class="s1">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">if </span><span class="s1">(errorMessage.isEmpty()) {</span>
+            <span class="s0">return true</span><span class="s1">;</span>
+        <span class="s1">} </span><span class="s0">else </span><span class="s1">{</span>
+            <span class="s1">Alert alert = </span><span class="s0">new </span><span class="s1">Alert(Alert.AlertType.ERROR);</span>
+            <span class="s1">alert.setTitle(</span><span class="s3">&quot;Помилка валідації&quot;</span><span class="s1">);</span>
+            <span class="s1">alert.setHeaderText(</span><span class="s3">&quot;Будь ласка, виправте помилки&quot;</span><span class="s1">);</span>
+            <span class="s1">alert.setContentText(errorMessage);</span>
+            <span class="s1">alert.showAndWait();</span>
+            <span class="s0">return false</span><span class="s1">;</span>
+        <span class="s1">}</span>
+    <span class="s1">}</span>
+<span class="s1">}</span>
+</pre>
+</body>
+</html>
