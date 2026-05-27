@@ -24,4 +24,5 @@ public class RentalDTO {
     private BigDecimal totalDeposit;
     private String status;
     private List<String> costumeNames;
+    private List<String> costumeImages;
 }

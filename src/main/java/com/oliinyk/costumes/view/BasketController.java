@@ -34,6 +34,16 @@ public class BasketController {
     @FXML private Label totalPriceLabel;
     @FXML private Label depositLabel;
     @FXML private Label discountLabel;
+    
+    @FXML private javafx.scene.control.Label titleLabel;
+    @FXML private javafx.scene.control.Label selectedLabel;
+    @FXML private javafx.scene.control.Label checkoutLabel;
+    @FXML private javafx.scene.control.Label startDateLabel;
+    @FXML private javafx.scene.control.Label endDateLabel;
+    @FXML private javafx.scene.control.Label depositTextLabel;
+    @FXML private javafx.scene.control.Label discountTextLabel;
+    @FXML private javafx.scene.control.Label totalTextLabel;
+    @FXML private javafx.scene.control.Button rentBtn;
 
     private BasketViewModel viewModel;
 
@@ -92,6 +102,16 @@ public class BasketController {
     }
 
     private void setupBindings() {
+        titleLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.title"));
+        selectedLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.selected"));
+        checkoutLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.checkout"));
+        startDateLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.start_date"));
+        endDateLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.end_date"));
+        depositTextLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.deposit"));
+        discountTextLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.discount"));
+        totalTextLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.total"));
+        rentBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("basket.rent_button"));
+
         startDatePicker.valueProperty().bindBidirectional(viewModel.startDateProperty());
         endDatePicker.valueProperty().bindBidirectional(viewModel.endDateProperty());
         totalPriceLabel.textProperty().bind(viewModel.totalPriceProperty());
@@ -194,7 +214,7 @@ public class BasketController {
         checkoutTask.setOnFailed(
                 e -> {
                     Throwable ex = checkoutTask.getException();
-                    showAlert("Помилка", ex.getMessage(), Alert.AlertType.ERROR);
+                    showAlert(com.oliinyk.costumes.util.I18nManager.get("alert.error.title"), ex.getMessage(), Alert.AlertType.ERROR);
                 });
 
         // Запуск таска у фоновому потоці
@@ -229,12 +249,12 @@ public class BasketController {
         // ── Заголовок чеку ──
         Label titleIcon = new Label("\uD83E\uDDFE");
         titleIcon.setStyle("-fx-font-size: 28px;");
-        Label titleLabel = new Label("Електронний чек");
+        Label titleLabel = new Label(com.oliinyk.costumes.util.I18nManager.get("basket.receipt.title"));
         titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
         HBox titleBox = new HBox(10, titleIcon, titleLabel);
         titleBox.setAlignment(Pos.CENTER);
 
-        Label subLabel = new Label("Карнавальна крамниця — оренда костюмів");
+        Label subLabel = new Label(com.oliinyk.costumes.util.I18nManager.get("basket.receipt.subtitle"));
         subLabel.setStyle("-fx-text-fill: -color-fg-muted; -fx-font-size: 12px;");
         subLabel.setAlignment(Pos.CENTER);
         subLabel.setMaxWidth(Double.MAX_VALUE);
@@ -275,15 +295,15 @@ public class BasketController {
                 .getChildren()
                 .addAll(
                         buildSummaryRow(
-                                "Вартість оренди:", String.format("%.2f грн", rentalTotal), false),
-                        buildSummaryRow("Застава:", String.format("%.2f грн", deposit), false),
+                                com.oliinyk.costumes.util.I18nManager.get("basket.total") + " ", String.format("%.2f", rentalTotal), false),
+                        buildSummaryRow(com.oliinyk.costumes.util.I18nManager.get("basket.deposit") + " ", String.format("%.2f", deposit), false),
                         buildSummaryRow(
-                                "Знижка (10% від 3+ дн.):",
-                                String.format("-%.2f грн", discount),
+                                com.oliinyk.costumes.util.I18nManager.get("basket.discount") + " ",
+                                String.format("-%.2f", discount),
                                 discount.compareTo(BigDecimal.ZERO) > 0),
                         new Separator(),
                         buildSummaryRow(
-                                "До сплати:", String.format("%.2f грн", grandTotal), false));
+                                com.oliinyk.costumes.util.I18nManager.get("basket.total") + " ", String.format("%.2f", grandTotal), false));
 
         // Виділити підсумок жирним
         HBox totalRow = (HBox) summaryBox.getChildren().get(summaryBox.getChildren().size() - 1);
@@ -296,18 +316,18 @@ public class BasketController {
                         });
 
         // ── Кнопка закриття ──
-        Button closeBtn = new Button("Закрити");
+        Button closeBtn = new Button(com.oliinyk.costumes.util.I18nManager.get("basket.receipt.close"));
         closeBtn.getStyleClass().addAll("button");
         closeBtn.setPrefWidth(160);
 
         // ── Кнопка Зберегти PDF ──
-        Button savePdfBtn = new Button("Зберегти PDF");
+        Button savePdfBtn = new Button(com.oliinyk.costumes.util.I18nManager.get("basket.receipt.save_pdf"));
         savePdfBtn.getStyleClass().addAll("button", "accent");
         savePdfBtn.setPrefWidth(160);
 
         savePdfBtn.setOnAction(ev -> {
             javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
-            fileChooser.setTitle("Зберегти чек у PDF");
+            fileChooser.setTitle(com.oliinyk.costumes.util.I18nManager.get("basket.receipt.save_pdf_title"));
             fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("PDF Document", "*.pdf"));
             fileChooser.setInitialFileName("receipt_" + System.currentTimeMillis() + ".pdf");
             java.io.File file = fileChooser.showSaveDialog(basketItems.getScene().getWindow());
@@ -319,10 +339,10 @@ public class BasketController {
                 com.oliinyk.costumes.service.export.ExportStrategy<com.oliinyk.costumes.service.export.ReceiptData> strategy = new com.oliinyk.costumes.service.export.ReceiptPdfExportStrategy();
                 try {
                     strategy.export(data, file);
-                    showAlert("Успіх", "Чек успішно збережено в PDF!", Alert.AlertType.INFORMATION);
+                    showAlert(com.oliinyk.costumes.util.I18nManager.get("alert.success.title"), com.oliinyk.costumes.util.I18nManager.get("basket.receipt.success"), Alert.AlertType.INFORMATION);
                 } catch (Exception ex) {
                     ex.printStackTrace();
-                    showAlert("Помилка", "Не вдалося зберегти PDF: " + ex.getMessage(), Alert.AlertType.ERROR);
+                    showAlert(com.oliinyk.costumes.util.I18nManager.get("alert.error.title"), com.oliinyk.costumes.util.I18nManager.get("basket.receipt.error") + " " + ex.getMessage(), Alert.AlertType.ERROR);
                 }
             }
         });
@@ -349,7 +369,7 @@ public class BasketController {
         root.setPrefWidth(460);
 
         Stage dialog = new Stage();
-        dialog.setTitle("Електронний чек");
+        dialog.setTitle(com.oliinyk.costumes.util.I18nManager.get("basket.receipt.title"));
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.initOwner(basketItems.getScene().getWindow());
         dialog.setResizable(false);

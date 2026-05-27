@@ -5,40 +5,40 @@
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="20.0" style="-fx-padding: 30; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.BasketController">
-    <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Ваш Кошик" />
+    <Label fx:id="titleLabel" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" />
     
     <HBox spacing="20" VBox.vgrow="ALWAYS">
         <!-- Ліва частина: Список товарів -->
         <VBox spacing="10" HBox.hgrow="ALWAYS" style="-fx-background-color: -color-bg-subtle; -fx-padding: 20; -fx-border-color: -color-border-default; -fx-border-radius: 10; -fx-background-radius: 10;">
-            <Label style="-fx-font-size: 18; -fx-font-weight: bold;" text="Обрані костюми" />
+            <Label fx:id="selectedLabel" style="-fx-font-size: 18; -fx-font-weight: bold;" />
             <ListView fx:id="basketItems" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;" />
         </VBox>
         
         <!-- Права частина: Оформлення оренди -->
         <VBox spacing="15" prefWidth="300" styleClass="card" style="-fx-padding: 20; -fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-radius: 10; -fx-background-radius: 10;">
-            <Label style="-fx-font-size: 18; -fx-font-weight: bold;" text="Оформлення оренди" />
+            <Label fx:id="checkoutLabel" style="-fx-font-size: 18; -fx-font-weight: bold;" />
             
-            <Label text="Дата початку:" />
+            <Label fx:id="startDateLabel" />
             <DatePicker fx:id="startDatePicker" maxWidth="Infinity" />
             
-            <Label text="Дата завершення:" />
+            <Label fx:id="endDateLabel" />
             <DatePicker fx:id="endDatePicker" maxWidth="Infinity" />
             
             <Separator />
             
             <VBox spacing="8">
                 <HBox alignment="CENTER_LEFT">
-                    <Label text="Застава:" />
+                    <Label fx:id="depositTextLabel" />
                     <Region HBox.hgrow="ALWAYS" />
                     <Label fx:id="depositLabel" text="0 грн" style="-fx-font-weight: bold;" />
                 </HBox>
                 <HBox alignment="CENTER_LEFT">
-                    <Label text="Знижка:" />
+                    <Label fx:id="discountTextLabel" />
                     <Region HBox.hgrow="ALWAYS" />
                     <Label fx:id="discountLabel" text="0 грн" style="-fx-text-fill: -color-success-emphasis; -fx-font-weight: bold;" />
                 </HBox>
                 <HBox alignment="CENTER_LEFT" style="-fx-padding: 10 0 0 0;">
-                    <Label text="Разом до сплати:" style="-fx-font-size: 16; -fx-font-weight: bold;" />
+                    <Label fx:id="totalTextLabel" style="-fx-font-size: 16; -fx-font-weight: bold;" />
                     <Region HBox.hgrow="ALWAYS" />
                     <Label fx:id="totalPriceLabel" text="0 грн" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: -color-accent-emphasis;" />
                 </HBox>
@@ -46,7 +46,7 @@
             
             <Region VBox.vgrow="ALWAYS" />
             
-            <Button onAction="#onRentClicked" text="Орендувати" styleClass="success" maxWidth="Infinity" prefHeight="40">
+            <Button fx:id="rentBtn" onAction="#onRentClicked" styleClass="success" maxWidth="Infinity" prefHeight="40">
                 <graphic>
                     <FontIcon iconLiteral="fas-check" iconColor="white" />
                 </graphic>

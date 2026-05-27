@@ -5,98 +5,105 @@
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="20.0" style="-fx-padding: 30; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.AdminPanelController">
-    <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Панель Адміністратора" />
+    <Label fx:id="titleLabel" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" />
     
     <TabPane VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE">
-        <Tab fx:id="dashboardTab" text="Дашборд">
+        <Tab fx:id="dashboardTab">
             <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
                 <VBox spacing="30" style="-fx-padding: 30;">
-                    <Label style="-fx-font-size: 20; -fx-font-weight: bold;" text="Аналітика прокату" />
+                    <Label fx:id="analyticsLabel" style="-fx-font-size: 20; -fx-font-weight: bold;" />
                     <HBox spacing="30" alignment="CENTER">
                          <VBox spacing="10" styleClass="card" style="-fx-padding: 20; -fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-radius: 10;" HBox.hgrow="ALWAYS">
-                            <Label style="-fx-font-weight: bold;" text="Статуси замовлень" />
+                            <Label fx:id="statusChartLabel" style="-fx-font-weight: bold;" />
                             <javafx.scene.chart.PieChart fx:id="statusChart" />
                          </VBox>
                          <VBox spacing="10" styleClass="card" style="-fx-padding: 20; -fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-radius: 10;" HBox.hgrow="ALWAYS">
-                            <Label style="-fx-font-weight: bold;" text="Топ-5 популярних костюмів" />
+                            <Label fx:id="topCostumesLabel" style="-fx-font-weight: bold;" />
                             <javafx.scene.chart.BarChart fx:id="popularityChart">
-                                <xAxis><javafx.scene.chart.CategoryAxis label="Костюм" /></xAxis>
-                                <yAxis><javafx.scene.chart.NumberAxis label="Кількість оренд" /></yAxis>
+                                <xAxis><javafx.scene.chart.CategoryAxis fx:id="topCostumesXAxis" /></xAxis>
+                                <yAxis><javafx.scene.chart.NumberAxis fx:id="topCostumesYAxis" /></yAxis>
                             </javafx.scene.chart.BarChart>
                          </VBox>
                     </HBox>
                 </VBox>
             </ScrollPane>
         </Tab>
-        <Tab text="Костюми">
+        <Tab fx:id="costumesTab">
             <VBox spacing="10" style="-fx-padding: 20;">
                 <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Button text="Додати Новий Костюм" styleClass="success" onAction="#onAddCostumeClicked">
+                    <Button fx:id="addCostumeBtn" styleClass="success" onAction="#onAddCostumeClicked">
                         <graphic>
                             <FontIcon iconLiteral="fas-plus" iconColor="white" />
                         </graphic>
                     </Button>
-                    <Button text="Backup (JSON)" styleClass="button" onAction="#onBackupCostumesClicked">
+                    <Button fx:id="backupBtn" styleClass="button" onAction="#onBackupCostumesClicked">
                         <graphic>
                             <FontIcon iconLiteral="fas-download" />
                         </graphic>
                     </Button>
-                    <Button text="Restore (JSON)" styleClass="button" onAction="#onRestoreCostumesClicked">
+                    <Button fx:id="restoreBtn" styleClass="button" onAction="#onRestoreCostumesClicked">
                         <graphic>
                             <FontIcon iconLiteral="fas-upload" />
                         </graphic>
                     </Button>
                     <Region HBox.hgrow="ALWAYS" />
-                    <TextField fx:id="costumeSearchField" promptText="Пошук костюмів..." />
+                    <TextField fx:id="costumeSearchField" />
                 </HBox>
                 <TableView fx:id="costumesTable" VBox.vgrow="ALWAYS">
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <columns>
-                        <TableColumn text="Назва" prefWidth="200" />
-                        <TableColumn text="Опис" prefWidth="350" />
-                        <TableColumn text="Ціна (грн/день)" prefWidth="120" />
-                        <TableColumn text="Дії" prefWidth="180" />
+                        <TableColumn fx:id="costumesNameCol" prefWidth="200" />
+                        <TableColumn fx:id="costumesDescCol" prefWidth="350" />
+                        <TableColumn fx:id="costumesPriceCol" prefWidth="120" />
+                        <TableColumn fx:id="costumesActionsCol" prefWidth="180" />
                     </columns>
                 </TableView>
             </VBox>
         </Tab>
         
-        <Tab text="Користувачі">
+        <Tab fx:id="usersTab">
             <VBox spacing="10" style="-fx-padding: 20;">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="usersSearchField" />
+                </HBox>
                 <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <columns>
-                        <TableColumn text="Email" prefWidth="300" />
-                        <TableColumn text="Роль" prefWidth="120" />
-                        <TableColumn text="Верифікований" prefWidth="120" />
+                        <TableColumn fx:id="usersEmailCol" prefWidth="300" />
+                        <TableColumn fx:id="usersRoleCol" prefWidth="120" />
+                        <TableColumn fx:id="usersVerifiedCol" prefWidth="120" />
                     </columns>
                 </TableView>
             </VBox>
         </Tab>
         
-        <Tab text="Оренди">
+        <Tab fx:id="rentalsTab">
             <VBox spacing="10" style="-fx-padding: 20;">
                 <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Button text="Експорт у CSV" styleClass="accent" onAction="#onExportRentalsClicked">
+                    <Button fx:id="exportCsvBtn" styleClass="accent" onAction="#onExportRentalsClicked">
                         <graphic>
                             <FontIcon iconLiteral="fas-file-export" />
                         </graphic>
                     </Button>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <TextField fx:id="rentalsSearchField" />
                 </HBox>
                 <TableView fx:id="rentalsTable" VBox.vgrow="ALWAYS">
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                     <columns>
-                        <TableColumn text="Користувач" prefWidth="250" />
-                        <TableColumn text="Дата Початку" prefWidth="150" />
-                        <TableColumn text="Дата Кінця" prefWidth="150" />
-                        <TableColumn text="Статус" prefWidth="120" />
-                        <TableColumn text="Сума" prefWidth="120" />
+                        <TableColumn fx:id="rentalsUserCol" prefWidth="200" />
+                        <TableColumn fx:id="rentalsCostumesCol" prefWidth="300" />
+                        <TableColumn fx:id="rentalsPeriodCol" prefWidth="180" />
+                        <TableColumn fx:id="rentalsTotalCol" prefWidth="120" />
+                        <TableColumn fx:id="rentalsStatusCol" prefWidth="120" />
+                        <TableColumn fx:id="rentalsActionCol" prefWidth="120" />
+                        <TableColumn fx:id="rentalsDeleteCol" prefWidth="50" />
                     </columns>
                 </TableView>
             </VBox>

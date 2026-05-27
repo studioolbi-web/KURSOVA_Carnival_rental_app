@@ -161,11 +161,26 @@ public class JdbcRentalRepository implements RentalRepository {
      */
     @Override
     public void delete(UUID id) {
-        String sql = "DELETE FROM rentals WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setObject(1, id);
-            stmt.executeUpdate();
+        String deleteItemsSql = "DELETE FROM rental_items WHERE rental_id = ?";
+        String deleteRentalSql = "DELETE FROM rentals WHERE id = ?";
+        try (Connection conn = DatabaseManager.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement itemStmt = conn.prepareStatement(deleteItemsSql);
+                 PreparedStatement rentalStmt = conn.prepareStatement(deleteRentalSql)) {
+                
+                itemStmt.setObject(1, id);
+                itemStmt.executeUpdate();
+                
+                rentalStmt.setObject(1, id);
+                rentalStmt.executeUpdate();
+                
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new RuntimeException("Помилка при видаленні оренди", e);
+            } finally {
+                conn.setAutoCommit(true);
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Помилка при видаленні оренди", e);
         }

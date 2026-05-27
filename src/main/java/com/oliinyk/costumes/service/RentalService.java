@@ -158,6 +158,15 @@ public class RentalService {
         rentalRepository.update(rental);
     }
 
+    /**
+     * Видаляє оренду та всі її позиції з бази даних.
+     *
+     * @param rentalId Унікальний ідентифікатор оренди
+     */
+    public void deleteRental(UUID rentalId) {
+        rentalRepository.delete(rentalId);
+    }
+
     private void validateRentalDates(LocalDate start, LocalDate end) {
         if (start == null || end == null) {
             throw new IllegalArgumentException("Дати не можуть бути порожніми.");

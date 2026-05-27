@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox spacing="20.0" style="-fx-padding: 30; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.MyRentalsController">
-    <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Мої Оренди" />
+    <Label fx:id="titleLabel" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" />
     
     <TableView fx:id="rentalsTable" VBox.vgrow="ALWAYS">
         <columnResizePolicy>

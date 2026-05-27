@@ -5,13 +5,13 @@
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <VBox spacing="20.0" style="-fx-padding: 30; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.SettingsController">
-    <Label style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" text="Налаштування" />
+    <Label fx:id="titleLabel" style="-fx-font-size: 28; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" />
     
     <VBox spacing="15" styleClass="card" style="-fx-padding: 20; -fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-radius: 10; -fx-background-radius: 10;">
-        <Label style="-fx-font-size: 18; -fx-font-weight: bold;" text="Вигляд" />
+        <Label fx:id="appearanceLabel" style="-fx-font-size: 18; -fx-font-weight: bold;" />
         <HBox spacing="15" alignment="CENTER_LEFT">
-            <Label text="Темна тема:" style="-fx-font-size: 14;" />
-            <ToggleButton fx:id="themeToggle" text="Увімкнути">
+            <Label fx:id="themeLabel" style="-fx-font-size: 14;" />
+            <ToggleButton fx:id="themeToggle">
                 <graphic>
                     <FontIcon iconLiteral="fas-moon" />
                 </graphic>
@@ -19,13 +19,13 @@
         </HBox>
         <Separator />
         <HBox spacing="15" alignment="CENTER_LEFT">
-            <Label text="Режим каталогу:" style="-fx-font-size: 14;" />
-            <ToggleButton fx:id="gridToggle" text="Сітка (Grid)" onAction="#onGridViewSelected" />
-            <ToggleButton fx:id="listToggle" text="Список (List)" onAction="#onListViewSelected" />
+            <Label fx:id="catalogModeLabel" style="-fx-font-size: 14;" />
+            <ToggleButton fx:id="gridToggle" onAction="#onGridViewSelected" />
+            <ToggleButton fx:id="listToggle" onAction="#onListViewSelected" />
         </HBox>
         <Separator />
         <HBox spacing="15" alignment="CENTER_LEFT">
-            <Label text="Мова / Language:" style="-fx-font-size: 14;" />
+            <Label fx:id="languageLabel" style="-fx-font-size: 14;" />
             <ComboBox fx:id="languageCombo" prefWidth="150" />
         </HBox>
     </VBox>

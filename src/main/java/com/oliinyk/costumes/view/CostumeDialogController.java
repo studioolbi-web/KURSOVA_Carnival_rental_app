@@ -20,6 +20,16 @@ public class CostumeDialogController {
     @FXML private TextField depositField;
     @FXML private ComboBox<Category> categoryComboBox;
     @FXML private TextField imagePathField;
+    
+    @FXML private javafx.scene.control.Label nameLabel;
+    @FXML private javafx.scene.control.Label descLabel;
+    @FXML private javafx.scene.control.Label priceLabel;
+    @FXML private javafx.scene.control.Label depositLabel;
+    @FXML private javafx.scene.control.Label categoryLabel;
+    @FXML private javafx.scene.control.Label photoLabel;
+    @FXML private javafx.scene.control.Button selectFileBtn;
+    @FXML private javafx.scene.control.Button cancelBtn;
+    @FXML private javafx.scene.control.Button saveBtn;
 
     private Costume costume;
     private boolean saveClicked = false;
@@ -29,32 +39,15 @@ public class CostumeDialogController {
 
     @FXML
     public void initialize() {
-        imagePathField.setEditable(false);
-        imagePathField.setOnMouseClicked(
-                e -> {
-                    javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
-                    fileChooser.setTitle("Оберіть зображення");
-                    fileChooser
-                            .getExtensionFilters()
-                            .addAll(
-                                    new javafx.stage.FileChooser.ExtensionFilter(
-                                            "Зображення", "*.png", "*.jpg", "*.jpeg"));
-
-                    java.io.File file =
-                            fileChooser.showOpenDialog(imagePathField.getScene().getWindow());
-                    if (file != null) {
-                        try {
-                            String savedPath = imageService.saveImage(file);
-                            imagePathField.setText(savedPath);
-                        } catch (Exception ex) {
-                            Alert alert = new Alert(Alert.AlertType.ERROR);
-                            alert.setTitle("Помилка");
-                            alert.setHeaderText("Не вдалося зберегти зображення");
-                            alert.setContentText(ex.getMessage());
-                            alert.showAndWait();
-                        }
-                    }
-                });
+        nameLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.name"));
+        descLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.desc"));
+        priceLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.price"));
+        depositLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.deposit"));
+        categoryLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.category"));
+        photoLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.photo"));
+        selectFileBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.select_file"));
+        cancelBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.cancel"));
+        saveBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("dialog.save"));
 
         categoryComboBox.setItems(FXCollections.observableArrayList(categoryRepo.findAll()));
         categoryComboBox.setConverter(
@@ -119,6 +112,28 @@ public class CostumeDialogController {
         if (validateInput()) {
             saveClicked = true;
             closeStage();
+        }
+    }
+
+    @FXML
+    private void onSelectImageClicked() {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Оберіть зображення");
+        fileChooser.getExtensionFilters().addAll(
+                new javafx.stage.FileChooser.ExtensionFilter("Зображення", "*.png", "*.jpg", "*.jpeg"));
+
+        java.io.File file = fileChooser.showOpenDialog(imagePathField.getScene().getWindow());
+        if (file != null) {
+            try {
+                String savedPath = imageService.saveImage(file);
+                imagePathField.setText(savedPath);
+            } catch (Exception ex) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Помилка");
+                alert.setHeaderText("Не вдалося зберегти зображення");
+                alert.setContentText(ex.getMessage());
+                alert.showAndWait();
+            }
         }
     }
 

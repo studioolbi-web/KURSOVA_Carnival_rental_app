@@ -29,6 +29,11 @@ public class CatalogController {
     @FXML private Button gridModeBtn;
     @FXML private Button listModeBtn;
     @FXML private ComboBox<com.oliinyk.costumes.model.Category> categoryFilter;
+    
+    @FXML private javafx.scene.control.Label titleLabel;
+    @FXML private javafx.scene.control.Label periodLabel;
+    @FXML private javafx.scene.control.Tooltip gridTooltip;
+    @FXML private javafx.scene.control.Tooltip listTooltip;
 
     private CatalogViewModel viewModel;
     private final JdbcRentalRepository rentalRepo = new JdbcRentalRepository();
@@ -44,6 +49,15 @@ public class CatalogController {
     }
 
     private void setupUI() {
+        titleLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.title"));
+        periodLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.period"));
+        startDatePicker.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.from"));
+        endDatePicker.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.to"));
+        gridTooltip.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.grid"));
+        listTooltip.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.list"));
+        categoryFilter.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.all_categories"));
+        searchField.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("catalog.search"));
+
         startDatePicker.setValue(LocalDate.now());
         endDatePicker.setValue(LocalDate.now().plusDays(1));
 
@@ -110,7 +124,7 @@ public class CatalogController {
         categoryFilter.setConverter(new javafx.util.StringConverter<>() {
             @Override
             public String toString(com.oliinyk.costumes.model.Category category) {
-                return category == null ? "Всі категорії" : category.getName();
+                return category == null ? com.oliinyk.costumes.util.I18nManager.get("catalog.all_categories") : category.getName();
             }
             @Override
             public com.oliinyk.costumes.model.Category fromString(String string) {
@@ -215,19 +229,25 @@ public class CatalogController {
         priceLabel.setStyle(
                 "-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: -color-accent-emphasis;");
 
-        Button addToCartBtn = new Button(isAvailable ? "Додати в кошик" : "Недоступно");
+        Button addToCartBtn = new Button();
+        final boolean available = isAvailable;
+        addToCartBtn.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(() -> {
+            if (!available) return com.oliinyk.costumes.util.I18nManager.get("catalog.unavailable");
+            if (addToCartBtn.isDisabled()) return com.oliinyk.costumes.util.I18nManager.get("catalog.added");
+            return com.oliinyk.costumes.util.I18nManager.get("catalog.add_to_cart");
+        }, com.oliinyk.costumes.util.I18nManager.localeProperty(), addToCartBtn.disabledProperty()));
+        
         addToCartBtn.getStyleClass().add(isAvailable ? "accent" : "danger");
         addToCartBtn.setDisable(!isAvailable);
         addToCartBtn.setMaxWidth(Double.MAX_VALUE);
         addToCartBtn.setOnAction(
                 e -> {
                     viewModel.addToCart(costume);
-                    addToCartBtn.setText("Додано!");
                     addToCartBtn.getStyleClass().remove("accent");
                     addToCartBtn.getStyleClass().add("success");
                     addToCartBtn.setDisable(true);
                     
-                    showToast("Костюм «" + costume.getName() + "» додано у кошик!");
+                    showToast(com.oliinyk.costumes.util.I18nManager.get("catalog.toast.added") + " «" + costume.getName() + "»");
                 });
 
         if ("LIST".equals(viewMode)) {
@@ -254,13 +274,23 @@ public class CatalogController {
         javafx.scene.control.Label toast = new javafx.scene.control.Label(message);
         toast.setStyle("-fx-background-color: -color-success-emphasis; -fx-text-fill: -color-fg-on-emphasis; -fx-padding: 10 20; -fx-background-radius: 20; -fx-font-size: 14;");
         
-        javafx.scene.layout.StackPane root = (javafx.scene.layout.StackPane) costumesGrid.getScene().getRoot();
-        root.getChildren().add(toast);
-        javafx.scene.layout.StackPane.setAlignment(toast, javafx.geometry.Pos.BOTTOM_CENTER);
-        javafx.scene.layout.StackPane.setMargin(toast, new Insets(0, 0, 50, 0));
+        javafx.stage.Popup popup = new javafx.stage.Popup();
+        popup.getContent().add(toast);
+        popup.setAutoHide(true);
+        
+        javafx.stage.Window window = costumesGrid.getScene().getWindow();
+        toast.applyCss();
+        toast.layout();
+        
+        // Show initially to calculate size, then adjust position
+        popup.show(window);
+        double x = window.getX() + window.getWidth() / 2 - toast.prefWidth(-1) / 2;
+        double y = window.getY() + window.getHeight() - 100;
+        popup.setX(x);
+        popup.setY(y);
 
         javafx.animation.PauseTransition delay = new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
-        delay.setOnFinished(e -> root.getChildren().remove(toast));
+        delay.setOnFinished(e -> popup.hide());
         delay.play();
     }
     private void showCostumeDetails(Costume costume) {

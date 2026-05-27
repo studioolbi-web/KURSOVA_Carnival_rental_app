@@ -25,6 +25,7 @@ public class MyRentalsController {
     @FXML private TableColumn<RentalDTO, String> endCol;
     @FXML private TableColumn<RentalDTO, String> statusCol;
     @FXML private TableColumn<RentalDTO, String> totalCol;
+    @FXML private javafx.scene.control.Label titleLabel;
 
     private RentalFacade rentalFacade;
 
@@ -43,10 +44,71 @@ public class MyRentalsController {
     }
 
     private void setupTable() {
+        titleLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.title"));
+        costumesCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.costumes"));
+        startCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.start_date"));
+        endCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.end_date"));
+        statusCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.status"));
+        totalCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.total"));
+
         costumesCol.setCellValueFactory(
-                data ->
-                        new SimpleStringProperty(
-                                String.join(", ", data.getValue().getCostumeNames())));
+                data -> new SimpleStringProperty("")); // Cell value is not used since we use graphic
+        
+        costumesCol.setCellFactory(
+                column -> new javafx.scene.control.TableCell<>() {
+                    @Override
+                    protected void updateItem(String val, boolean empty) {
+                        super.updateItem(val, empty);
+                        if (empty || getTableRow() == null || getTableView().getItems().isEmpty()) {
+                            setText(null);
+                            setGraphic(null);
+                        } else {
+                            int index = getIndex();
+                            if (index >= 0 && index < getTableView().getItems().size()) {
+                                RentalDTO rental = getTableView().getItems().get(index);
+                                javafx.scene.layout.VBox vBox = new javafx.scene.layout.VBox(8);
+                                vBox.setPadding(new javafx.geometry.Insets(8, 0, 8, 0));
+                                
+                                for (int i = 0; i < rental.getCostumeNames().size(); i++) {
+                                    String name = rental.getCostumeNames().get(i);
+                                    String imagePath = rental.getCostumeImages() != null && i < rental.getCostumeImages().size() ? rental.getCostumeImages().get(i) : null;
+                                    
+                                    javafx.scene.layout.HBox hBox = new javafx.scene.layout.HBox(12);
+                                    hBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                                    
+                                    javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView();
+                                    if (imagePath != null && !imagePath.isEmpty()) {
+                                        try {
+                                            java.net.URL resourceUrl = getClass().getResource(imagePath);
+                                            if (resourceUrl != null) {
+                                                imageView.setImage(new javafx.scene.image.Image(resourceUrl.toExternalForm(), true));
+                                            } else {
+                                                java.io.File file = new java.io.File(imagePath);
+                                                if (file.exists()) {
+                                                    imageView.setImage(new javafx.scene.image.Image(file.toURI().toString(), true));
+                                                }
+                                            }
+                                        } catch (Exception ex) {}
+                                    }
+                                    imageView.setFitWidth(45);
+                                    imageView.setFitHeight(45);
+                                    imageView.setPreserveRatio(true);
+                                    
+                                    javafx.scene.control.Label nameLabel = new javafx.scene.control.Label(name);
+                                    nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 15px; -fx-text-fill: -color-fg-default;");
+                                    
+                                    hBox.getChildren().addAll(imageView, nameLabel);
+                                    vBox.getChildren().add(hBox);
+                                }
+                                setText(null);
+                                setGraphic(vBox);
+                            } else {
+                                setText(null);
+                                setGraphic(null);
+                            }
+                        }
+                    }
+                });
         startCol.setCellValueFactory(
                 data -> new SimpleStringProperty(data.getValue().getStartDate().toString()));
         endCol.setCellValueFactory(
@@ -66,15 +128,27 @@ public class MyRentalsController {
                                 } else {
                                     javafx.scene.control.Label badge =
                                             new javafx.scene.control.Label();
-                                    if ("ACTIVE".equals(status)) {
-                                        badge.setText("Активна");
-                                        badge.getStyleClass().addAll("badge", "accent");
-                                    } else if ("COMPLETED".equals(status)) {
-                                        badge.setText("Завершена");
-                                        badge.getStyleClass().addAll("badge", "success");
-                                    } else {
-                                        badge.setText(status);
-                                        badge.getStyleClass().add("badge");
+                                    switch (status) {
+                                        case "RESERVED" -> {
+                                            badge.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.status.reserved"));
+                                            badge.getStyleClass().addAll("badge", "accent");
+                                        }
+                                        case "ISSUED", "ACTIVE" -> {
+                                            badge.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.status.active"));
+                                            badge.getStyleClass().addAll("badge", "warning");
+                                        }
+                                        case "OVERDUE" -> {
+                                            badge.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.status.overdue"));
+                                            badge.getStyleClass().addAll("badge", "danger");
+                                        }
+                                        case "RETURNED", "COMPLETED" -> {
+                                            badge.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("rentals.status.completed"));
+                                            badge.getStyleClass().addAll("badge", "success");
+                                        }
+                                        default -> {
+                                            badge.setText(status);
+                                            badge.getStyleClass().add("badge");
+                                        }
                                     }
                                     setGraphic(badge);
                                 }

@@ -79,8 +79,8 @@ public class ReceiptPdfExportStrategy implements ExportStrategy<ReceiptData> {
         }
         document.add(new Paragraph("До сплати: " + String.format("%.2f грн", data.grandTotal)).setBold().setFontSize(14));
 
-        // Генерація QR-коду
-        String qrContent = "Carnival Rental\nДо сплати: " + data.grandTotal + " грн";
+        // Генерація QR-коду (Англійською для уникнення проблем з кодуванням на iPhone)
+        String qrContent = "Carnival Rental\nTotal to pay: " + data.grandTotal + " UAH";
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
         
         java.util.Map<com.google.zxing.EncodeHintType, Object> hints = new java.util.HashMap<>();

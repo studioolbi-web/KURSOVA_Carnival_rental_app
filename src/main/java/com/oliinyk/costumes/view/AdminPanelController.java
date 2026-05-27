@@ -33,6 +33,37 @@ public class AdminPanelController {
     @FXML private TextField costumeSearchField;
     @FXML private javafx.scene.chart.PieChart statusChart;
     @FXML private javafx.scene.chart.BarChart<String, Number> popularityChart;
+    
+    @FXML private javafx.scene.control.Label titleLabel;
+    @FXML private javafx.scene.control.Tab dashboardTab;
+    @FXML private javafx.scene.control.Tab costumesTab;
+    @FXML private javafx.scene.control.Tab usersTab;
+    @FXML private javafx.scene.control.Tab rentalsTab;
+    @FXML private javafx.scene.control.Label analyticsLabel;
+    @FXML private javafx.scene.control.Label statusChartLabel;
+    @FXML private javafx.scene.control.Label topCostumesLabel;
+    @FXML private javafx.scene.chart.CategoryAxis topCostumesXAxis;
+    @FXML private javafx.scene.chart.NumberAxis topCostumesYAxis;
+    @FXML private javafx.scene.control.Button addCostumeBtn;
+    @FXML private javafx.scene.control.Button backupBtn;
+    @FXML private javafx.scene.control.Button restoreBtn;
+    @FXML private javafx.scene.control.Button exportCsvBtn;
+    @FXML private javafx.scene.control.TableColumn<Costume, String> costumesNameCol;
+    @FXML private javafx.scene.control.TableColumn<Costume, String> costumesDescCol;
+    @FXML private javafx.scene.control.TableColumn<Costume, String> costumesPriceCol;
+    @FXML private javafx.scene.control.TableColumn<Costume, Void> costumesActionsCol;
+    @FXML private javafx.scene.control.TableColumn<User, String> usersEmailCol;
+    @FXML private javafx.scene.control.TableColumn<User, String> usersRoleCol;
+    @FXML private javafx.scene.control.TableColumn<User, String> usersVerifiedCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, String> rentalsUserCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, String> rentalsCostumesCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, String> rentalsPeriodCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, String> rentalsStatusCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, String> rentalsTotalCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, Void> rentalsActionCol;
+    @FXML private javafx.scene.control.TableColumn<RentalDTO, Void> rentalsDeleteCol;
+    @FXML private TextField rentalsSearchField;
+    @FXML private TextField usersSearchField;
 
     private final com.oliinyk.costumes.repository.CostumeRepository costumeRepo = com.oliinyk.costumes.repository.RepositoryProvider.getCostumeRepository();
     private final JdbcUserRepository userRepo = new JdbcUserRepository();
@@ -43,6 +74,8 @@ public class AdminPanelController {
     private RentalFacade rentalFacade;
 
     private ObservableList<Costume> costumesData = FXCollections.observableArrayList();
+    private ObservableList<RentalDTO> rentalsData = FXCollections.observableArrayList();
+    private ObservableList<User> usersData = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -56,8 +89,9 @@ public class AdminPanelController {
                         new JdbcUserRepository());
 
         setupTables();
-        loadDataAsync();
         setupSearch();
+        setupI18n();
+        loadDataAsync();
 
         // Візуальний баг 1: Поворот тексту на осі X (Вимога UX)
         javafx.scene.chart.CategoryAxis xAxis =
@@ -71,27 +105,49 @@ public class AdminPanelController {
         setupRentalsTable();
     }
 
+    private void setupI18n() {
+        titleLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.title"));
+        dashboardTab.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.tab.dashboard"));
+        costumesTab.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.tab.costumes"));
+        usersTab.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.tab.users"));
+        rentalsTab.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.tab.rentals"));
+        
+        analyticsLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.analytics"));
+        statusChartLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.status_chart"));
+        topCostumesLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.top_costumes"));
+        topCostumesXAxis.labelProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.chart.costume"));
+        topCostumesYAxis.labelProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.chart.rentals_count"));
+        
+        addCostumeBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.btn.add_costume"));
+        backupBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.btn.backup"));
+        restoreBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.btn.restore"));
+        exportCsvBtn.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.btn.export_csv"));
+        costumeSearchField.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.search_prompt"));
+        
+        costumesNameCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.name"));
+        costumesDescCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.desc"));
+        costumesPriceCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.price"));
+        costumesActionsCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.actions"));
+        
+        usersEmailCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.email"));
+        usersRoleCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.role"));
+        usersVerifiedCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.verified"));
+        
+        rentalsUserCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.user"));
+        rentalsCostumesCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.costumes"));
+        rentalsPeriodCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.period"));
+        rentalsStatusCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.status"));
+        rentalsTotalCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.total"));
+        rentalsActionCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.actions"));
+        rentalsSearchField.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.search_email_prompt"));
+        usersSearchField.promptTextProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.search_email_prompt"));
+    }
+
     private void setupCostumesTable() {
-        TableColumn<Costume, String> nameCol =
-                (TableColumn<Costume, String>) costumesTable.getColumns().get(0);
-        nameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
-
-        TableColumn<Costume, String> descCol =
-                (TableColumn<Costume, String>) costumesTable.getColumns().get(1);
-        descCol.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().getDescription()));
-
-        TableColumn<Costume, String> priceCol =
-                (TableColumn<Costume, String>) costumesTable.getColumns().get(2);
-        priceCol.setCellValueFactory(
-                data ->
-                        new SimpleStringProperty(
-                                String.format("%.2f грн", data.getValue().getPricePerDay())));
-
-        // Додавання кнопок дій (Вимога 5.1 CRUD)
-        TableColumn<Costume, Void> actionCol =
-                (TableColumn<Costume, Void>) costumesTable.getColumns().get(3);
-        actionCol.setCellFactory(
+        costumesNameCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
+        costumesDescCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getDescription()));
+        costumesPriceCol.setCellValueFactory(data -> new SimpleStringProperty(String.format("%.2f грн", data.getValue().getPricePerDay())));
+        costumesActionsCol.setCellFactory(
                 param ->
                         new javafx.scene.control.TableCell<>() {
                             private final javafx.scene.control.Button editBtn =
@@ -151,7 +207,7 @@ public class AdminPanelController {
             javafx.scene.layout.VBox page = loader.load();
 
             javafx.stage.Stage dialogStage = new javafx.stage.Stage();
-            dialogStage.setTitle(costume == null ? "Додати костюм" : "Редагувати костюм");
+            dialogStage.titleProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding(costume == null ? "dialog.title.add" : "dialog.title.edit"));
             dialogStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
             dialogStage.initOwner(costumesTable.getScene().getWindow());
             javafx.scene.Scene scene = new javafx.scene.Scene(page);
@@ -270,19 +326,11 @@ public class AdminPanelController {
     }
 
     private void setupUsersTable() {
-        TableColumn<User, String> emailCol =
-                (TableColumn<User, String>) usersTable.getColumns().get(0);
-        emailCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getEmail()));
-
-        TableColumn<User, String> roleCol =
-                (TableColumn<User, String>) usersTable.getColumns().get(1);
-        roleCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getRole()));
-
-        TableColumn<User, String> verifiedCol =
-                (TableColumn<User, String>) usersTable.getColumns().get(2);
-        verifiedCol.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().isVerified() ? "Так" : "Ні"));
-        verifiedCol.setCellFactory(
+        usersEmailCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getEmail()));
+        usersRoleCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getRole()));
+        usersVerifiedCol.setCellValueFactory(
+                data -> new SimpleStringProperty(data.getValue().isVerified() ? com.oliinyk.costumes.util.I18nManager.get("admin.yes") : com.oliinyk.costumes.util.I18nManager.get("admin.no")));
+        usersVerifiedCol.setCellFactory(
                 column ->
                         new javafx.scene.control.TableCell<>() {
                             @Override
@@ -302,9 +350,10 @@ public class AdminPanelController {
                             }
                         });
 
-        TableColumn<User, String> blockedCol = new TableColumn<>("Заблоковано");
+        TableColumn<User, String> blockedCol = new TableColumn<>();
+        blockedCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.blocked"));
         blockedCol.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().isBlocked() ? "Так" : "Ні"));
+                data -> new SimpleStringProperty(data.getValue().isBlocked() ? com.oliinyk.costumes.util.I18nManager.get("admin.yes") : com.oliinyk.costumes.util.I18nManager.get("admin.no")));
         blockedCol.setCellFactory(
                 column ->
                         new javafx.scene.control.TableCell<>() {
@@ -325,7 +374,8 @@ public class AdminPanelController {
                             }
                         });
 
-        TableColumn<User, Void> actionCol = new TableColumn<>("Дії");
+        TableColumn<User, Void> actionCol = new TableColumn<>();
+        actionCol.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("admin.col.actions"));
         actionCol.setCellFactory(
                 param ->
                         new javafx.scene.control.TableCell<>() {
@@ -382,26 +432,78 @@ public class AdminPanelController {
     }
 
     private void setupRentalsTable() {
-        TableColumn<RentalDTO, String> userCol =
-                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(0);
-        userCol.setCellValueFactory(
+        rentalsUserCol.setCellValueFactory(
                 data -> new SimpleStringProperty(data.getValue().getUserEmail()));
+        
+        rentalsPeriodCol.setCellValueFactory(
+                data -> {
+                    java.time.LocalDate start = data.getValue().getStartDate();
+                    java.time.LocalDate end = data.getValue().getEndDate();
+                    long days = java.time.temporal.ChronoUnit.DAYS.between(start, end);
+                    if (days == 0) days = 1;
+                    return new SimpleStringProperty(start + " → " + end + " (" + days + " дн.)");
+                });
 
-        TableColumn<RentalDTO, String> startCol =
-                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(1);
-        startCol.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().getStartDate().toString()));
+        rentalsCostumesCol.setCellValueFactory(data -> new SimpleStringProperty(""));
+        rentalsCostumesCol.setCellFactory(
+                column -> new javafx.scene.control.TableCell<>() {
+                    @Override
+                    protected void updateItem(String val, boolean empty) {
+                        super.updateItem(val, empty);
+                        if (empty || getTableRow() == null || getTableView().getItems().isEmpty()) {
+                            setText(null);
+                            setGraphic(null);
+                        } else {
+                            int index = getIndex();
+                            if (index >= 0 && index < getTableView().getItems().size()) {
+                                RentalDTO rental = getTableView().getItems().get(index);
+                                javafx.scene.layout.VBox vBox = new javafx.scene.layout.VBox(4);
+                                vBox.setPadding(new javafx.geometry.Insets(4, 0, 4, 0));
+                                
+                                for (int i = 0; i < rental.getCostumeNames().size(); i++) {
+                                    String name = rental.getCostumeNames().get(i);
+                                    String imagePath = rental.getCostumeImages() != null && i < rental.getCostumeImages().size() ? rental.getCostumeImages().get(i) : null;
+                                    
+                                    javafx.scene.layout.HBox hBox = new javafx.scene.layout.HBox(8);
+                                    hBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                                    
+                                    javafx.scene.image.ImageView imageView = new javafx.scene.image.ImageView();
+                                    if (imagePath != null && !imagePath.isEmpty()) {
+                                        try {
+                                            java.net.URL resourceUrl = getClass().getResource(imagePath);
+                                            if (resourceUrl != null) {
+                                                imageView.setImage(new javafx.scene.image.Image(resourceUrl.toExternalForm(), true));
+                                            } else {
+                                                java.io.File file = new java.io.File(imagePath);
+                                                if (file.exists()) {
+                                                    imageView.setImage(new javafx.scene.image.Image(file.toURI().toString(), true));
+                                                }
+                                            }
+                                        } catch (Exception ex) {}
+                                    }
+                                    imageView.setFitWidth(30);
+                                    imageView.setFitHeight(30);
+                                    imageView.setPreserveRatio(true);
+                                    
+                                    javafx.scene.control.Label nameLabel = new javafx.scene.control.Label(name);
+                                    nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: -color-fg-default;");
+                                    
+                                    hBox.getChildren().addAll(imageView, nameLabel);
+                                    vBox.getChildren().add(hBox);
+                                }
+                                setText(null);
+                                setGraphic(vBox);
+                            } else {
+                                setText(null);
+                                setGraphic(null);
+                            }
+                        }
+                    }
+                });
 
-        TableColumn<RentalDTO, String> endCol =
-                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(2);
-        endCol.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().getEndDate().toString()));
-
-        TableColumn<RentalDTO, String> statusCol =
-                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(3);
-        statusCol.setCellValueFactory(
+        rentalsStatusCol.setCellValueFactory(
                 data -> new SimpleStringProperty(data.getValue().getStatus()));
-        statusCol.setCellFactory(
+        rentalsStatusCol.setCellFactory(
                 column ->
                         new javafx.scene.control.TableCell<>() {
                             @Override
@@ -415,19 +517,20 @@ public class AdminPanelController {
                                             new javafx.scene.control.Label();
                                     switch (status) {
                                         case "RESERVED" -> {
-                                            badge.setText("Заброньовано");
+                                            badge.setText(com.oliinyk.costumes.util.I18nManager.get("rentals.status.reserved"));
                                             badge.getStyleClass().addAll("badge", "accent");
                                         }
                                         case "ISSUED", "ACTIVE" -> {
-                                            badge.setText("Видано / Активна");
+                                            badge.setText(com.oliinyk.costumes.util.I18nManager.get("rentals.status.issued"));
                                             badge.getStyleClass().addAll("badge", "warning");
                                         }
                                         case "OVERDUE" -> {
-                                            badge.setText("Прострочено");
+                                            badge.setText(com.oliinyk.costumes.util.I18nManager.get("rentals.status.overdue"));
                                             badge.getStyleClass().addAll("badge", "danger");
+                                            getTableRow().setStyle("-fx-background-color: rgba(255, 0, 0, 0.05);");
                                         }
                                         case "RETURNED", "COMPLETED" -> {
-                                            badge.setText("Повернуто / Завершена");
+                                            badge.setText(com.oliinyk.costumes.util.I18nManager.get("rentals.status.returned"));
                                             badge.getStyleClass().addAll("badge", "success");
                                         }
                                         default -> {
@@ -440,89 +543,109 @@ public class AdminPanelController {
                             }
                         });
 
-        TableColumn<RentalDTO, String> totalCol =
-                (TableColumn<RentalDTO, String>) rentalsTable.getColumns().get(4);
-        totalCol.setCellValueFactory(
-                data ->
-                        new SimpleStringProperty(
-                                String.format("%.2f грн", data.getValue().getTotalPrice())));
+        rentalsTotalCol.setCellValueFactory(
+                data -> {
+                    java.math.BigDecimal total = data.getValue().getTotalPrice();
+                    java.math.BigDecimal penalty = data.getValue().getPenaltyAmount();
+                    String text = String.format("%.2f грн", total);
+                    if (penalty.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                        text += "\n+" + String.format("%.2f грн", penalty) + " (Штраф)";
+                    }
+                    return new SimpleStringProperty(text);
+                });
 
-        TableColumn<RentalDTO, String> penaltyCol = new TableColumn<>("Штраф");
-        penaltyCol.setCellValueFactory(
-                data ->
-                        new SimpleStringProperty(
-                                String.format("%.2f грн", data.getValue().getPenaltyAmount())));
-        penaltyCol.setPrefWidth(100);
-
-        // Додавання ComboBox для зміни статусу (Блок 2: Машина станів)
-        TableColumn<RentalDTO, Void> actionCol = new TableColumn<>("Дії");
-        actionCol.setPrefWidth(220);
-        actionCol.setCellFactory(
+        rentalsActionCol.setCellFactory(
                 param ->
                         new javafx.scene.control.TableCell<>() {
-                            private final ComboBox<String> statusCombo = new ComboBox<>();
-
+                            private final javafx.scene.control.Button actionBtn = new javafx.scene.control.Button();
+                            
                             {
-                                statusCombo.getItems().addAll("RESERVED", "ISSUED", "RETURNED");
-                                statusCombo.getStyleClass().add("small");
-
-                                // UX баг 3: StringConverter для локалізації статусів (Вимога UX)
-                                statusCombo.setConverter(
-                                        new javafx.util.StringConverter<>() {
-                                            @Override
-                                            public String toString(String status) {
-                                                if (status == null) return "";
-                                                return switch (status) {
-                                                    case "RESERVED" -> "Заброньовано";
-                                                    case "ISSUED" -> "Видано";
-                                                    case "RETURNED" -> "Повернуто";
-                                                    case "ACTIVE" -> "Активна";
-                                                    case "COMPLETED" -> "Завершена";
-                                                    case "OVERDUE" -> "Прострочено";
-                                                    default -> status;
-                                                };
-                                            }
-
-                                            @Override
-                                            public String fromString(String string) {
-                                                if (string == null) return null;
-                                                return switch (string) {
-                                                    case "Заброньовано" -> "RESERVED";
-                                                    case "Видано" -> "ISSUED";
-                                                    case "Повернуто" -> "RETURNED";
-                                                    case "Активна" -> "ACTIVE";
-                                                    case "Завершена" -> "COMPLETED";
-                                                    case "Прострочено" -> "OVERDUE";
-                                                    default -> string;
-                                                };
-                                            }
-                                        });
-
-                                statusCombo.setOnAction(
-                                        event -> {
-                                            RentalDTO rental =
-                                                    getTableView().getItems().get(getIndex());
-                                            String newValue = statusCombo.getValue();
-                                            if (newValue != null
-                                                    && !newValue.equals(rental.getStatus())) {
-                                                handleStatusChange(rental, newValue);
-                                            }
-                                        });
+                                setAlignment(javafx.geometry.Pos.CENTER);
                             }
 
                             @Override
                             protected void updateItem(Void item, boolean empty) {
                                 super.updateItem(item, empty);
-                                if (empty) {
+                                if (empty || getTableRow() == null) {
                                     setGraphic(null);
                                 } else {
-                                    RentalDTO rental = getTableView().getItems().get(getIndex());
-                                    statusCombo.setValue(rental.getStatus());
-                                    setGraphic(statusCombo);
+                                    int index = getIndex();
+                                    if (index >= 0 && index < getTableView().getItems().size()) {
+                                        RentalDTO rental = getTableView().getItems().get(index);
+                                        
+                                        actionBtn.setOnAction(null);
+                                        actionBtn.getStyleClass().removeAll("accent", "success");
+                                        
+                                        if ("RESERVED".equals(rental.getStatus())) {
+                                            actionBtn.setText("Видати");
+                                            actionBtn.getStyleClass().add("accent");
+                                            actionBtn.setVisible(true);
+                                            actionBtn.setOnAction(e -> handleStatusChange(rental, "ISSUED"));
+                                        } else if ("ISSUED".equals(rental.getStatus()) || "ACTIVE".equals(rental.getStatus()) || "OVERDUE".equals(rental.getStatus())) {
+                                            actionBtn.setText("Прийняти");
+                                            actionBtn.getStyleClass().add("success");
+                                            actionBtn.setVisible(true);
+                                            actionBtn.setOnAction(e -> handleStatusChange(rental, "RETURNED"));
+                                        } else {
+                                            actionBtn.setVisible(false);
+                                        }
+                                        
+                                        setGraphic(actionBtn);
+                                    } else {
+                                        setGraphic(null);
+                                    }
                                 }
                             }
                         });
-        rentalsTable.getColumns().addAll(penaltyCol, actionCol);
+
+        rentalsDeleteCol.setCellFactory(
+                param ->
+                        new javafx.scene.control.TableCell<>() {
+                            private final javafx.scene.control.Button deleteBtn = new javafx.scene.control.Button();
+
+                            {
+                                setAlignment(javafx.geometry.Pos.CENTER);
+                                deleteBtn.getStyleClass().addAll("button-icon", "flat", "danger");
+                                deleteBtn.setGraphic(new org.kordamp.ikonli.javafx.FontIcon("fas-trash"));
+                                deleteBtn.setTooltip(new javafx.scene.control.Tooltip("Видалити"));
+                                deleteBtn.setOnAction(event -> {
+                                    RentalDTO rental = getTableView().getItems().get(getIndex());
+                                    handleDeleteRental(rental);
+                                });
+                            }
+
+                            @Override
+                            protected void updateItem(Void item, boolean empty) {
+                                super.updateItem(item, empty);
+                                if (empty || getTableRow() == null) {
+                                    setGraphic(null);
+                                } else {
+                                    setGraphic(deleteBtn);
+                                }
+                            }
+                        });
+    }
+
+    private void handleDeleteRental(RentalDTO rental) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Підтвердження");
+        alert.setHeaderText("Видалити цю оренду?");
+        alert.setContentText("Увага: це видалить запис з бази даних.");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == javafx.scene.control.ButtonType.OK) {
+                try {
+                    rentalFacade.deleteRental(rental.getId());
+                    loadDataAsync();
+                } catch (Exception e) {
+                    javafx.scene.control.Alert err = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                    err.setTitle("Помилка");
+                    err.setHeaderText("Неможливо видалити оренду");
+                    err.setContentText(e.getMessage());
+                    err.showAndWait();
+                }
+            }
+        });
     }
 
     @FXML
@@ -579,16 +702,17 @@ public class AdminPanelController {
         statusCounts.forEach(
                 (status, count) -> {
                     // UX баг 2: Локалізація в графіках (Вимога UX)
-                    String localizedStatus =
+                    String localizedKey =
                             switch (status) {
-                                case "RESERVED" -> "Заброньовано";
-                                case "ISSUED" -> "Видано";
-                                case "RETURNED" -> "Повернуто";
-                                case "COMPLETED" -> "Завершена";
-                                case "ACTIVE" -> "Активна";
-                                case "OVERDUE" -> "Прострочено";
-                                default -> status;
+                                case "RESERVED" -> "rentals.status.reserved";
+                                case "ISSUED" -> "rentals.status.issued";
+                                case "RETURNED" -> "rentals.status.returned";
+                                case "COMPLETED" -> "rentals.status.completed";
+                                case "ACTIVE" -> "rentals.status.active";
+                                case "OVERDUE" -> "rentals.status.overdue";
+                                default -> null;
                             };
+                    String localizedStatus = localizedKey != null ? com.oliinyk.costumes.util.I18nManager.get(localizedKey) : status;
                     statusChart
                             .getData()
                             .add(new javafx.scene.chart.PieChart.Data(localizedStatus, count));
@@ -646,9 +770,8 @@ public class AdminPanelController {
                         javafx.application.Platform.runLater(
                                 () -> {
                                     costumesData.setAll(costumes);
-                                    usersTable.setItems(FXCollections.observableArrayList(users));
-                                    rentalsTable.setItems(
-                                            FXCollections.observableArrayList(rentals));
+                                    usersData.setAll(users);
+                                    rentalsData.setAll(rentals);
                                     // Наповнення графіків дашборду (Блок 3: Дашборд)
                                     updateCharts(rentals);
                                 });
@@ -660,12 +783,12 @@ public class AdminPanelController {
 
     private void setupSearch() {
         // Реалізація пошуку (Вимога розділу 5.2)
-        FilteredList<Costume> filteredData = new FilteredList<>(costumesData, p -> true);
+        FilteredList<Costume> filteredCostumes = new FilteredList<>(costumesData, p -> true);
         costumeSearchField
                 .textProperty()
                 .addListener(
                         (observable, oldValue, newValue) -> {
-                            filteredData.setPredicate(
+                            filteredCostumes.setPredicate(
                                     costume -> {
                                         if (newValue == null || newValue.isEmpty()) return true;
                                         String lowerCaseFilter = newValue.toLowerCase();
@@ -674,6 +797,24 @@ public class AdminPanelController {
                                                 .contains(lowerCaseFilter);
                                     });
                         });
-        costumesTable.setItems(filteredData);
+        costumesTable.setItems(filteredCostumes);
+        
+        FilteredList<RentalDTO> filteredRentals = new FilteredList<>(rentalsData, p -> true);
+        rentalsSearchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredRentals.setPredicate(rental -> {
+                if (newValue == null || newValue.isEmpty()) return true;
+                return rental.getUserEmail().toLowerCase().contains(newValue.toLowerCase());
+            });
+        });
+        rentalsTable.setItems(filteredRentals);
+
+        FilteredList<User> filteredUsers = new FilteredList<>(usersData, p -> true);
+        usersSearchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredUsers.setPredicate(user -> {
+                if (newValue == null || newValue.isEmpty()) return true;
+                return user.getEmail().toLowerCase().contains(newValue.toLowerCase());
+            });
+        });
+        usersTable.setItems(filteredUsers);
     }
 }

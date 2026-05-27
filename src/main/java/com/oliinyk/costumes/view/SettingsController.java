@@ -15,6 +15,12 @@ public class SettingsController {
     @FXML private ToggleButton gridToggle;
     @FXML private ToggleButton listToggle;
     @FXML private javafx.scene.control.ComboBox<String> languageCombo;
+    
+    @FXML private javafx.scene.control.Label titleLabel;
+    @FXML private javafx.scene.control.Label appearanceLabel;
+    @FXML private javafx.scene.control.Label themeLabel;
+    @FXML private javafx.scene.control.Label catalogModeLabel;
+    @FXML private javafx.scene.control.Label languageLabel;
 
     private SettingsViewModel viewModel;
 
@@ -24,9 +30,20 @@ public class SettingsController {
     }
 
     private void setupUI() {
+        titleLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.title"));
+        appearanceLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.appearance"));
+        themeLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.theme"));
+        catalogModeLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.catalog.mode"));
+        gridToggle.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.catalog.grid"));
+        listToggle.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.catalog.list"));
+        languageLabel.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("settings.language"));
+
+        themeToggle.textProperty().bind(javafx.beans.binding.Bindings.createStringBinding(() -> {
+            return themeToggle.isSelected() ? com.oliinyk.costumes.util.I18nManager.get("settings.theme.off") : com.oliinyk.costumes.util.I18nManager.get("settings.theme.on");
+        }, themeToggle.selectedProperty(), com.oliinyk.costumes.util.I18nManager.localeProperty()));
+
         // Налаштування теми
         themeToggle.setSelected(viewModel.isDarkTheme());
-        updateThemeText();
 
         themeToggle.setOnAction(
                 e -> {
@@ -38,7 +55,6 @@ public class SettingsController {
                         Application.setUserAgentStylesheet(
                                 new PrimerLight().getUserAgentStylesheet());
                     }
-                    updateThemeText();
                 });
 
         // Налаштування режиму каталогу
@@ -69,9 +85,7 @@ public class SettingsController {
         });
     }
 
-    private void updateThemeText() {
-        themeToggle.setText(themeToggle.isSelected() ? "Вимкнути" : "Увімкнути");
-    }
+
 
     @FXML
     private void onGridViewSelected() {

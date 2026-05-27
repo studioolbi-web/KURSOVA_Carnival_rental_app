@@ -74,6 +74,15 @@ public class RentalFacade {
     }
 
     /**
+     * Видаляє оренду за її ідентифікатором.
+     *
+     * @param rentalId Унікальний ідентифікатор оренди
+     */
+    public void deleteRental(UUID rentalId) {
+        rentalService.deleteRental(rentalId);
+    }
+
+    /**
      * Отримати список костюмів, що входять до конкретної оренди.
      *
      * @param rentalId Унікальний ідентифікатор оренди
@@ -128,6 +137,7 @@ public class RentalFacade {
         }
 
         List<String> names = costumes.stream().map(Costume::getName).collect(Collectors.toList());
+        List<String> images = costumes.stream().map(Costume::getImagePath).collect(Collectors.toList());
 
         return RentalDTO.builder()
                 .id(rental.getId())
@@ -140,6 +150,7 @@ public class RentalFacade {
                 .totalDeposit(totalDeposit)
                 .status(rental.getStatus())
                 .costumeNames(names)
+                .costumeImages(images)
                 .build();
     }
 }
