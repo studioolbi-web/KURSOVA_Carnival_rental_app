@@ -73,8 +73,10 @@ public class SmtpEmailServiceImpl implements EmailService {
                 System.out.println("Email sent successfully to " + email);
 
             } catch (MessagingException e) {
-                System.err.println("Failed to send email to " + email);
-                e.printStackTrace();
+                System.err.println("Failed to send email to " + email + ". Reason: " + e.getMessage());
+                System.out.println("---- DEBUG / FALLBACK ----");
+                System.out.println("To " + email + ": Your verification code is " + verificationCode);
+                System.out.println("--------------------------");
             }
         });
     }

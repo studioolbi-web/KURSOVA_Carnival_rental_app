@@ -18,7 +18,7 @@
     </VBox>
 
     <VBox fx:id="verifyPane" spacing="15" maxWidth="300" visible="false" managed="false">
-        <Label text="Код відправлено на пошту (див. консоль)!" style="-fx-text-fill: -color-success-fg;" wrapText="true" />
+        <Label text="Код відправлено на пошту!" style="-fx-text-fill: -color-success-fg;" wrapText="true" />
         <TextField fx:id="codeField" promptText="Введіть 6-значний код" />
         <Button maxWidth="Infinity" styleClass="success" text="Підтвердити" onAction="#handleVerify" />
         <Button text="Скасувати" maxWidth="Infinity" styleClass="flat" onAction="#navigateBack" />
