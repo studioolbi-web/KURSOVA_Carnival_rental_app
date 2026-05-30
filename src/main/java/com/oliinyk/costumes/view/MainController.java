@@ -23,6 +23,7 @@ public class MainController {
     // Створюємо загальний ViewModel для каталогу, щоб не втрачати стан при перемиканні
     @FXML private javafx.scene.control.Button btnCatalog;
     @FXML private javafx.scene.control.Button btnBasket;
+    @FXML private javafx.scene.control.Button btnLookBuilder;
     @FXML private javafx.scene.control.Button btnMyRentals;
     @FXML private javafx.scene.control.Button btnAdmin;
     @FXML private javafx.scene.control.Button btnSettings;
@@ -49,6 +50,7 @@ public class MainController {
         // i18n bindings
         btnCatalog.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.catalog"));
         btnBasket.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.basket"));
+        btnLookBuilder.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.lookbuilder"));
         btnMyRentals.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.myrentals"));
         btnAdmin.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.admin"));
         btnSettings.textProperty().bind(com.oliinyk.costumes.util.I18nManager.createStringBinding("nav.settings"));
@@ -90,6 +92,10 @@ public class MainController {
     @FXML
     private void showSettings() {
         loadView("/views/SettingsView.fxml", settingsViewModel);
+    }
+
+    @FXML private void showLookBuilder() {
+        loadView("/views/LookBuilderView.fxml", null);
     }
 
     @FXML

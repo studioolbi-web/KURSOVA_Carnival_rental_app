@@ -30,6 +30,11 @@
                     <FontIcon iconLiteral="fas-shopping-cart" iconSize="16" />
                 </graphic>
             </Button>
+            <Button fx:id="btnLookBuilder" text="Конструктор образу" maxWidth="Infinity" alignment="BASELINE_LEFT" onAction="#showLookBuilder" styleClass="flat">
+                <graphic>
+                    <FontIcon iconLiteral="fas-magic" iconSize="16" />
+                </graphic>
+            </Button>
             <Button fx:id="btnMyRentals" text="Мої Оренди" maxWidth="Infinity" alignment="BASELINE_LEFT" onAction="#showMyRentals" styleClass="flat">
                 <graphic>
                     <FontIcon iconLiteral="fas-history" iconSize="16" />

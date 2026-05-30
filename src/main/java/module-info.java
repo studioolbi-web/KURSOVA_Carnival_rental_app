@@ -2,6 +2,8 @@ module com.oliinyk.costumes.carnivalrentalapp {
     requires transitive javafx.controls;
     requires transitive javafx.graphics;
     requires javafx.fxml;
+    requires javafx.swing;
+    requires java.desktop;
     requires static lombok;
     requires transitive java.sql;
     requires com.zaxxer.hikari;

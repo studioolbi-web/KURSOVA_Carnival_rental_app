@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<BorderPane style="-fx-padding: 20; -fx-background-color: -color-bg-default;" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.oliinyk.costumes.view.LookBuilderController">
+    
+    <top>
+        <VBox spacing="10">
+            <Label text="Конструктор образу" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: -color-fg-default;" />
+            <Label text="Перетягніть елементи на полотно, щоб створити свій унікальний образ." style="-fx-text-fill: -color-fg-muted;" />
+            <BorderPane.margin>
+                <Insets bottom="20" />
+            </BorderPane.margin>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox spacing="15" prefWidth="250" style="-fx-background-color: -color-bg-inset; -fx-padding: 15; -fx-background-radius: 10;">
+            <Label text="Елементи" style="-fx-font-size: 18; -fx-font-weight: bold;" />
+            
+            <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" VBox.vgrow="ALWAYS" styleClass="edge-to-edge">
+                <TilePane fx:id="itemsPalette" hgap="10" vgap="10" prefColumns="2" alignment="TOP_CENTER" />
+            </ScrollPane>
+        </VBox>
+    </left>
+    
+    <center>
+        <VBox spacing="15" alignment="CENTER">
+            <BorderPane.margin>
+                <Insets left="20" />
+            </BorderPane.margin>
+            
+            <!-- Робоча зона (Полотно) -->
+            <StackPane fx:id="canvasContainer" style="-fx-background-color: white; -fx-border-color: #ddd; -fx-border-width: 2; -fx-border-radius: 10; -fx-background-radius: 10;" VBox.vgrow="ALWAYS">
+                <!-- Задній фон (кастомне фото) -->
+                <ImageView fx:id="backgroundImage" preserveRatio="true" />
+                
+                <!-- Панель для елементів одягу -->
+                <Pane fx:id="canvasPane" />
+            </StackPane>
+            
+            <!-- Нижня панель інструментів -->
+            <HBox spacing="15" alignment="CENTER">
+                <Button text="Завантажити фон" onAction="#uploadBackground" styleClass="button-outlined">
+                    <graphic><FontIcon iconLiteral="fas-image" /></graphic>
+                </Button>
+                
+                <Button text="Очистити полотно" onAction="#clearCanvas" styleClass="button-outlined">
+                    <graphic><FontIcon iconLiteral="fas-trash" /></graphic>
+                </Button>
+                
+                <Region HBox.hgrow="ALWAYS" />
+                
+                <Label text="Загальна вартість: " style="-fx-font-size: 16;" />
+                <Label fx:id="totalPriceLabel" text="0.00 ₴" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: -color-accent-emphasis;" />
+                
+                <Button text="Зберегти картинку" onAction="#saveLookImage" styleClass="button-filled">
+                    <graphic><FontIcon iconLiteral="fas-download" /></graphic>
+                </Button>
+                
+                <Button text="Додати в кошик" onAction="#rentLook" styleClass="button-filled, accent">
+                    <graphic><FontIcon iconLiteral="fas-cart-plus" /></graphic>
+                </Button>
+            </HBox>
+        </VBox>
+    </center>
+
+</BorderPane>

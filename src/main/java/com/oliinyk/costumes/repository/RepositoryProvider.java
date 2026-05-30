@@ -6,6 +6,7 @@ package com.oliinyk.costumes.repository;
  */
 public class RepositoryProvider {
     private static CostumeRepository costumeRepository;
+    private static CustomLookRepository customLookRepository;
 
     private RepositoryProvider() {}
 
@@ -14,5 +15,12 @@ public class RepositoryProvider {
             costumeRepository = new CachedCostumeRepository(new JdbcCostumeRepository(), 100);
         }
         return costumeRepository;
+    }
+
+    public static synchronized CustomLookRepository getCustomLookRepository() {
+        if (customLookRepository == null) {
+            customLookRepository = new JdbcCustomLookRepository();
+        }
+        return customLookRepository;
     }
 }
