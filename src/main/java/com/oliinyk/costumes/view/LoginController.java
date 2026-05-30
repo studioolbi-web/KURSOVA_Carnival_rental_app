@@ -71,15 +71,11 @@ public class LoginController {
             stage.setScene(new Scene(root, 1200, 800));
 
             // Візуальний баг 3: Стиснутий Каталог по замовчуванню (Вимога UX)
-            stage.setMaximized(false);
-            stage.setWidth(1200);
-            stage.setHeight(800);
+            stage.setResizable(true);
             stage.setMinWidth(1000);
             stage.setMinHeight(700);
-
             stage.setTitle("Карнавальні Костюми");
-            stage.setResizable(true);
-            stage.centerOnScreen();
+            stage.setMaximized(true);
         } catch (Exception e) {
             e.printStackTrace();
             errorLabel.setText("Помилка відкриття каталогу: " + e.getMessage());

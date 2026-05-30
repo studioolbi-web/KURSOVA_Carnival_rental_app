@@ -39,6 +39,7 @@ public class LookBuilderController {
     @FXML private ImageView backgroundImage;
     @FXML private Pane canvasPane;
     @FXML private Label totalPriceLabel;
+    @FXML private javafx.scene.control.ComboBox<String> categoryFilter;
 
     private final CustomLookRepository customLookRepo = RepositoryProvider.getCustomLookRepository();
     private List<Costume> addedItems = new ArrayList<>();
@@ -48,16 +49,24 @@ public class LookBuilderController {
 
     @FXML
     public void initialize() {
-        loadPaletteItems();
+        categoryFilter.getItems().addAll("Усі", "Топи", "Штани", "Спідниці", "Капелюхи", "Маски", "Аксесуари");
+        categoryFilter.setValue("Усі");
+        categoryFilter.valueProperty().addListener((obs, oldVal, newVal) -> loadPaletteItems(newVal));
+        
+        loadPaletteItems("Усі");
         
         // Обрізаємо вміст canvasPane, щоб зображення не виходили за його межі при масштабуванні
         javafx.scene.shape.Rectangle clipRect = new javafx.scene.shape.Rectangle();
         clipRect.widthProperty().bind(canvasPane.widthProperty());
         clipRect.heightProperty().bind(canvasPane.heightProperty());
         canvasPane.setClip(clipRect);
+        
+        // Пропускаємо кліки крізь порожні місця canvasPane до backgroundImage
+        canvasPane.setPickOnBounds(false);
     }
 
-    private void loadPaletteItems() {
+    private void loadPaletteItems(String filter) {
+        itemsPalette.getChildren().clear();
         // Завантажуємо лише елементи образу (категорія 'Елементи образу')
         // ID категорії елементів образу з міграції V11
         UUID elementsCategoryId = UUID.fromString("44444444-4444-4444-4444-444444444444");
@@ -65,6 +74,19 @@ public class LookBuilderController {
         List<Costume> allCostumes = RepositoryProvider.getCostumeRepository().findAll();
         List<Costume> elements = allCostumes.stream()
                 .filter(c -> elementsCategoryId.equals(c.getCategoryId()))
+                .filter(c -> {
+                    if (filter == null || filter.equals("Усі")) return true;
+                    String path = c.getImagePath() != null ? c.getImagePath().toLowerCase() : "";
+                    switch (filter) {
+                        case "Топи": return path.contains("top_");
+                        case "Штани": return path.contains("pants_");
+                        case "Спідниці": return path.contains("skirt_");
+                        case "Капелюхи": return path.contains("hat_") || path.contains("pirate_hat");
+                        case "Маски": return path.contains("mask_") || path.contains("zorro_mask");
+                        case "Аксесуари": return path.contains("acc_") || path.contains("red_cape");
+                        default: return true;
+                    }
+                })
                 .collect(Collectors.toList());
 
         for (Costume costume : elements) {
@@ -115,28 +137,40 @@ public class LookBuilderController {
         canvasItem.setLayoutX(100);
         canvasItem.setLayoutY(100);
 
+        // 1. Анімація появи
+        canvasItem.setScaleX(0);
+        canvasItem.setScaleY(0);
+        javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(javafx.util.Duration.millis(300), canvasItem);
+        st.setToX(1);
+        st.setToY(1);
+        st.setInterpolator(javafx.animation.Interpolator.EASE_OUT);
+        st.play();
+
+        // 2. Контекстне меню
+        javafx.scene.control.ContextMenu contextMenu = new javafx.scene.control.ContextMenu();
+        javafx.scene.control.MenuItem bringForward = new javafx.scene.control.MenuItem("На передній план");
+        bringForward.setOnAction(ev -> canvasItem.toFront());
+        javafx.scene.control.MenuItem sendBackward = new javafx.scene.control.MenuItem("На задній план");
+        sendBackward.setOnAction(ev -> canvasItem.toBack());
+        javafx.scene.control.MenuItem flip = new javafx.scene.control.MenuItem("Віддзеркалити");
+        flip.setOnAction(ev -> canvasItem.setScaleX(canvasItem.getScaleX() * -1));
+        javafx.scene.control.MenuItem delete = new javafx.scene.control.MenuItem("Видалити");
+        delete.setOnAction(ev -> {
+            canvasPane.getChildren().remove(canvasItem);
+            addedItems.remove(costume);
+            updateTotalPrice();
+        });
+        contextMenu.getItems().addAll(bringForward, sendBackward, flip, new javafx.scene.control.SeparatorMenuItem(), delete);
+
         // Drag and Drop логіка
         canvasItem.setOnMousePressed((MouseEvent event) -> {
             dragDeltaX = canvasItem.getLayoutX() - event.getSceneX();
             dragDeltaY = canvasItem.getLayoutY() - event.getSceneY();
-            canvasItem.toFront(); // Вивести на передній план
         });
 
         canvasItem.setOnMouseDragged((MouseEvent event) -> {
-            double newX = event.getSceneX() + dragDeltaX;
-            double newY = event.getSceneY() + dragDeltaY;
-            
-            // Запобігаємо виходу за межі полотна
-            double maxX = canvasPane.getWidth() - canvasItem.getBoundsInParent().getWidth();
-            double maxY = canvasPane.getHeight() - canvasItem.getBoundsInParent().getHeight();
-            
-            if (newX < 0) newX = 0;
-            if (newY < 0) newY = 0;
-            if (newX > maxX && maxX > 0) newX = maxX;
-            if (newY > maxY && maxY > 0) newY = maxY;
-
-            canvasItem.setLayoutX(newX);
-            canvasItem.setLayoutY(newY);
+            canvasItem.setLayoutX(event.getSceneX() + dragDeltaX);
+            canvasItem.setLayoutY(event.getSceneY() + dragDeltaY);
         });
         
         // Масштабування елементу коліщатком миші
@@ -156,12 +190,10 @@ public class LookBuilderController {
             event.consume();
         });
         
-        // Видалення елементу правим кліком
+        // Виклик контекстного меню правим кліком
         canvasItem.setOnMouseClicked(event -> {
             if (event.getButton() == javafx.scene.input.MouseButton.SECONDARY) {
-                canvasPane.getChildren().remove(canvasItem);
-                addedItems.remove(costume);
-                updateTotalPrice();
+                contextMenu.show(canvasItem, event.getScreenX(), event.getScreenY());
             }
         });
 
@@ -191,6 +223,37 @@ public class LookBuilderController {
             backgroundImage.setImage(image);
             backgroundImage.setFitWidth(canvasContainer.getWidth());
             backgroundImage.setFitHeight(canvasContainer.getHeight());
+            backgroundImage.setScaleX(1.0);
+            backgroundImage.setScaleY(1.0);
+            backgroundImage.setTranslateX(0);
+            backgroundImage.setTranslateY(0);
+            
+            // Дозволяємо перетягувати фон
+            final double[] bgDragDelta = new double[2];
+            backgroundImage.setOnMousePressed((MouseEvent event) -> {
+                bgDragDelta[0] = backgroundImage.getTranslateX() - event.getSceneX();
+                bgDragDelta[1] = backgroundImage.getTranslateY() - event.getSceneY();
+            });
+            backgroundImage.setOnMouseDragged((MouseEvent event) -> {
+                backgroundImage.setTranslateX(event.getSceneX() + bgDragDelta[0]);
+                backgroundImage.setTranslateY(event.getSceneY() + bgDragDelta[1]);
+            });
+            
+            // Дозволяємо масштабувати фон
+            backgroundImage.setOnScroll((javafx.scene.input.ScrollEvent event) -> {
+                double zoomFactor = 1.05;
+                if (event.getDeltaY() < 0) {
+                    zoomFactor = 1 / zoomFactor;
+                }
+                
+                double newScaleX = backgroundImage.getScaleX() * zoomFactor;
+                double newScaleY = backgroundImage.getScaleY() * zoomFactor;
+                if (newScaleX > 0.2 && newScaleX < 5.0) {
+                    backgroundImage.setScaleX(newScaleX);
+                    backgroundImage.setScaleY(newScaleY);
+                }
+                event.consume();
+            });
         }
     }
 
@@ -215,13 +278,22 @@ public class LookBuilderController {
         
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Зберегти образ");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Files", "*.png"));
-        fileChooser.setInitialFileName("my_custom_look.png");
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("PNG Image", "*.png"),
+            new FileChooser.ExtensionFilter("PDF Lookbook", "*.pdf")
+        );
+        fileChooser.setInitialFileName("my_custom_look");
         
         File file = fileChooser.showSaveDialog(canvasContainer.getScene().getWindow());
         if (file != null) {
             try {
-                ImageIO.write(SwingFXUtils.fromFXImage(snapshot, null), "png", file);
+                if (file.getName().toLowerCase().endsWith(".pdf")) {
+                    exportToPdf(snapshot, file);
+                    showAlert("Успіх", "Ваш Лукбук успішно збережено у PDF!");
+                } else {
+                    ImageIO.write(SwingFXUtils.fromFXImage(snapshot, null), "png", file);
+                    showAlert("Успіх", "Ваш образ успішно збережено як зображення!");
+                }
                 
                 // Зберігаємо в БД (опціонально)
                 if (SessionManager.getInstance().isLoggedIn()) {
@@ -236,12 +308,50 @@ public class LookBuilderController {
                             .build();
                     customLookRepo.save(look);
                 }
-                
-                showAlert("Успіх", "Ваш унікальний образ успішно збережено!");
-            } catch (IOException e) {
-                showAlert("Помилка", "Не вдалося зберегти зображення: " + e.getMessage());
+            } catch (Exception e) {
+                showAlert("Помилка", "Не вдалося зберегти файл: " + e.getMessage());
+                e.printStackTrace();
             }
         }
+    }
+
+    private void exportToPdf(WritableImage snapshot, File file) throws Exception {
+        com.itextpdf.kernel.pdf.PdfWriter writer = new com.itextpdf.kernel.pdf.PdfWriter(file);
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(writer);
+        com.itextpdf.layout.Document document = new com.itextpdf.layout.Document(pdf);
+
+        byte[] fontBytes = getClass().getResourceAsStream("/fonts/Arial.ttf").readAllBytes();
+        com.itextpdf.kernel.font.PdfFont font = com.itextpdf.kernel.font.PdfFontFactory.createFont(fontBytes, com.itextpdf.io.font.PdfEncodings.IDENTITY_H);
+        document.setFont(font);
+
+        document.add(new com.itextpdf.layout.element.Paragraph("Мій унікальний образ (Carnival Rental)")
+                .setFontSize(20).setBold().setTextAlignment(com.itextpdf.layout.properties.TextAlignment.CENTER));
+
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        ImageIO.write(SwingFXUtils.fromFXImage(snapshot, null), "png", baos);
+        com.itextpdf.layout.element.Image pdfImage = new com.itextpdf.layout.element.Image(
+                com.itextpdf.io.image.ImageDataFactory.create(baos.toByteArray()));
+        pdfImage.setHorizontalAlignment(com.itextpdf.layout.properties.HorizontalAlignment.CENTER);
+        pdfImage.setAutoScale(true);
+        document.add(pdfImage);
+
+        document.add(new com.itextpdf.layout.element.Paragraph("\nСписок використаних елементів:").setBold().setFontSize(16));
+
+        com.itextpdf.layout.element.Table table = new com.itextpdf.layout.element.Table(
+                com.itextpdf.layout.properties.UnitValue.createPercentArray(new float[]{3, 1})).useAllAvailableWidth();
+        table.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Назва елементу").setBold()));
+        table.addHeaderCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph("Ціна оренди (₴)").setBold()));
+
+        for (Costume c : addedItems) {
+            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph(c.getName())));
+            table.addCell(new com.itextpdf.layout.element.Cell().add(new com.itextpdf.layout.element.Paragraph(String.format("%.2f", c.getPricePerDay()))));
+        }
+        document.add(table);
+
+        document.add(new com.itextpdf.layout.element.Paragraph("\nЗагальна вартість оренди: " + String.format("%.2f ₴", totalPrice))
+                .setBold().setFontSize(14).setTextAlignment(com.itextpdf.layout.properties.TextAlignment.RIGHT));
+
+        document.close();
     }
 
     @FXML
