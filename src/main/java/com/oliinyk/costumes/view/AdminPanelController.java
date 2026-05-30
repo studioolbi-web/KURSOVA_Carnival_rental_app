@@ -379,16 +379,25 @@ public class AdminPanelController {
         actionCol.setCellFactory(
                 param ->
                         new javafx.scene.control.TableCell<>() {
-                            private final javafx.scene.control.Button blockBtn =
-                                    new javafx.scene.control.Button();
+                            private final javafx.scene.control.Button blockBtn = new javafx.scene.control.Button();
+                            private final javafx.scene.control.Button deleteBtn = new javafx.scene.control.Button();
+                            private final javafx.scene.layout.HBox pane = new javafx.scene.layout.HBox(8, blockBtn, deleteBtn);
 
                             {
+                                pane.setAlignment(javafx.geometry.Pos.CENTER);
                                 blockBtn.getStyleClass().add("button-icon");
-                                blockBtn.setOnAction(
-                                        event -> {
-                                            User user = getTableView().getItems().get(getIndex());
-                                            handleToggleBlock(user);
-                                        });
+                                blockBtn.setOnAction(event -> {
+                                    User user = getTableView().getItems().get(getIndex());
+                                    handleToggleBlock(user);
+                                });
+                                
+                                deleteBtn.getStyleClass().addAll("button-icon", "flat", "danger");
+                                deleteBtn.setGraphic(new org.kordamp.ikonli.javafx.FontIcon("fas-trash"));
+                                deleteBtn.setTooltip(new javafx.scene.control.Tooltip("Видалити користувача"));
+                                deleteBtn.setOnAction(event -> {
+                                    User user = getTableView().getItems().get(getIndex());
+                                    handleDeleteUser(user);
+                                });
                             }
 
                             @Override
@@ -417,7 +426,7 @@ public class AdminPanelController {
                                         blockBtn.setTooltip(
                                                 new javafx.scene.control.Tooltip("Заблокувати"));
                                     }
-                                    setGraphic(blockBtn);
+                                    setGraphic(pane);
                                 }
                             }
                         });
@@ -428,7 +437,38 @@ public class AdminPanelController {
     private void handleToggleBlock(User user) {
         user.setBlocked(!user.isBlocked());
         userRepo.update(user);
-        usersTable.refresh(); // Миттєве оновлення UI (Вимога розділу 6)
+        loadDataAsync();
+    }
+
+    private void handleDeleteUser(User user) {
+        if ("ADMIN".equals(user.getRole())) {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Помилка");
+            alert.setHeaderText("Неможливо видалити адміністратора");
+            alert.setContentText("У системі має залишатися хоча б один адміністратор.");
+            alert.showAndWait();
+            return;
+        }
+
+        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Підтвердження");
+        confirm.setHeaderText("Видалити користувача " + user.getEmail() + "?");
+        confirm.setContentText("Увага: користувача з існуючими орендами неможливо видалити через захист бази даних.");
+
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == javafx.scene.control.ButtonType.OK) {
+                try {
+                    userRepo.delete(user.getId());
+                    loadDataAsync();
+                } catch (Exception e) {
+                    javafx.scene.control.Alert err = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                    err.setTitle("Помилка видалення");
+                    err.setHeaderText("Неможливо видалити користувача");
+                    err.setContentText("Цей користувач має історію замовлень.\nБаза даних блокує видалення для збереження цілісності фінансової історії.\n\n(Помилка: " + e.getMessage() + ")");
+                    err.showAndWait();
+                }
+            }
+        });
     }
 
     private void setupRentalsTable() {
