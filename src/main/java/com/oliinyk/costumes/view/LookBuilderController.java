@@ -55,11 +55,11 @@ public class LookBuilderController {
         
         loadPaletteItems("Усі");
         
-        // Обрізаємо вміст canvasPane, щоб зображення не виходили за його межі при масштабуванні
+        // Обрізаємо вміст всього контейнера (canvasContainer), щоб і фон і елементи не виходили за межі
         javafx.scene.shape.Rectangle clipRect = new javafx.scene.shape.Rectangle();
-        clipRect.widthProperty().bind(canvasPane.widthProperty());
-        clipRect.heightProperty().bind(canvasPane.heightProperty());
-        canvasPane.setClip(clipRect);
+        clipRect.widthProperty().bind(canvasContainer.widthProperty());
+        clipRect.heightProperty().bind(canvasContainer.heightProperty());
+        canvasContainer.setClip(clipRect);
         
         // Пропускаємо кліки крізь порожні місця canvasPane до backgroundImage
         canvasPane.setPickOnBounds(false);
@@ -228,15 +228,31 @@ public class LookBuilderController {
             backgroundImage.setTranslateX(0);
             backgroundImage.setTranslateY(0);
             
-            // Дозволяємо перетягувати фон
+            // Дозволяємо перетягувати фон лівою кнопкою
             final double[] bgDragDelta = new double[2];
             backgroundImage.setOnMousePressed((MouseEvent event) -> {
-                bgDragDelta[0] = backgroundImage.getTranslateX() - event.getSceneX();
-                bgDragDelta[1] = backgroundImage.getTranslateY() - event.getSceneY();
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    bgDragDelta[0] = backgroundImage.getTranslateX() - event.getSceneX();
+                    bgDragDelta[1] = backgroundImage.getTranslateY() - event.getSceneY();
+                }
             });
             backgroundImage.setOnMouseDragged((MouseEvent event) -> {
-                backgroundImage.setTranslateX(event.getSceneX() + bgDragDelta[0]);
-                backgroundImage.setTranslateY(event.getSceneY() + bgDragDelta[1]);
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    backgroundImage.setTranslateX(event.getSceneX() + bgDragDelta[0]);
+                    backgroundImage.setTranslateY(event.getSceneY() + bgDragDelta[1]);
+                }
+            });
+            
+            // Контекстне меню для фону (видалення по правій клавіші)
+            javafx.scene.control.ContextMenu bgContextMenu = new javafx.scene.control.ContextMenu();
+            javafx.scene.control.MenuItem deleteBg = new javafx.scene.control.MenuItem("Видалити фон");
+            deleteBg.setOnAction(ev -> backgroundImage.setImage(null));
+            bgContextMenu.getItems().add(deleteBg);
+            
+            backgroundImage.setOnMouseClicked(event -> {
+                if (event.getButton() == javafx.scene.input.MouseButton.SECONDARY) {
+                    bgContextMenu.show(backgroundImage, event.getScreenX(), event.getScreenY());
+                }
             });
             
             // Дозволяємо масштабувати фон

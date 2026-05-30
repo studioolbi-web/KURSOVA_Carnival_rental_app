@@ -11,7 +11,7 @@ import java.util.UUID;
 /** Сервіс для управління зображеннями костюмів. */
 public class ImageService {
 
-    private static final String IMAGE_DIR = "app_data/images";
+    private static final String IMAGE_DIR = System.getProperty("user.home") + "/.carnival-rental/images";
 
     /**
      * Конструктор сервісу. Створює директорію для збереження зображень, якщо вона не існує.

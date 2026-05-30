@@ -15,8 +15,10 @@ public class Main extends Application {
     @Override
     public void init() throws Exception {
         // 1. Ініціалізація бази даних та запуск міграцій Flyway
-        // H2 embedded database file in current directory
-        DatabaseManager.initialize("jdbc:h2:./carnival_rental_db;DB_CLOSE_DELAY=-1", "sa", "");
+        // Зберігаємо БД у домашній папці користувача, щоб уникнути проблем із правами доступу (read-only Applications)
+        String userHome = System.getProperty("user.home");
+        String dbPath = userHome + "/.carnival-rental/db/carnival_rental_db";
+        DatabaseManager.initialize("jdbc:h2:" + dbPath + ";DB_CLOSE_DELAY=-1", "sa", "");
     }
 
     @Override
